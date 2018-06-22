@@ -2,17 +2,34 @@
 Choose 30% top low frequent words in the sentence,
 replace them with the most frequent candidate from wordnet """
 
-import pickle
 import operator
 from operator import itemgetter
 import re
+import pandas as pd
+
+import ujson
 
 from nltk.corpus import brown
 from nltk.probability import *
 from nltk.corpus import wordnet
 from nltk import sent_tokenize, word_tokenize
+import gensim
+import _pickle as pickle
+
+
+import logging
+
+logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
+
+# Load Google's pre-trained Word2Vec model.
+model = gensim.models.KeyedVectors.load_word2vec_format('./model/GoogleNews-vectors-negative300-SLIM.bin', binary=True)
 
 input = 'Her face was a synthesis of perfect symmetry and unusual proportion; he could have gazed at it for hours, trying to locate the source of its fascination.'
+
+# Load ngrams frequenct dictionary
+ngrams = pd.read_csv('ngrams.csv')
+area_dict = dict(zip(ngrams.bigram, ngrams.freq))
+# print(area_dict)
 
 
 def generate_freq_dict():
@@ -65,11 +82,55 @@ def frequency_approach(freq_dict, input):
             else:
                 print(token)
 
+
+def check_length(word):
+    """ Return word length. """
+    return len(word)
+
+
+def check_frequency(word):
+    """ Return word frequency. """
+    return freq_dict[word]
+
+
+def return_synonyms(word):
+    """ Return synonyms from wordnet. """
+    replacement_candidate = []
+    for synset in wordnet.synsets(word):
+        for lemma in synset.lemmas():
+            replacement_candidate.append(lemma.name())
+    return replacement_candidate
+
+
+def check_if_word_fits_the_context(word1, word2, left, right):
+    """ Check if bigrm with the replacement exists. """
+    ############# TEST ##################
+    if left + ' ' + word2 in ngrams and word2 + ' ' + right in ngrams:
+        return True
+    else:
+        return False
+
+
+def return_word2vec(word, topn=10):
+    """ Return top words from word2vec. """
+    if word in model:
+        print(word)
+        print(model.most_similar(word, topn=topn))
+        return [word[0] for word in model.most_similar(word, topn=10)]
+    else:
+        return []
+
 if __name__ == '__main__':
     freq_dict = generate_freq_dict()
     print(freq_dict)
 
     frequency_approach(freq_dict, input)
+
+    # New approach
+    for word in word_tokenize(input):
+        if word in model:
+            print(word)
+            print(model.most_similar(word, topn=10))
 
 
 # Todo:
@@ -85,3 +146,8 @@ if __name__ == '__main__':
 # 1. ComplexWordIdentifier
 # 2. Generator (generate suitable candidates)
 # 3. Ranker
+
+
+# word2vec, synonyms, ppdb
+
+# use ngrams to check the context
