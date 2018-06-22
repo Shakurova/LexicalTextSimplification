@@ -42,9 +42,9 @@ def convert(word, from_pos, to_pos):
     # filter only the desired pos (consider 'a' and 's' equivalent)
     related_noun_lemmas = [l for drf in derivationally_related_forms
                            for l in drf[1]
-                           if l.synset.name().split('.')[1] == to_pos
+                           if l.synset().name().split('.')[1] == to_pos
                            or to_pos in (WN_ADJECTIVE, WN_ADJECTIVE_SATELLITE)
-                           and l.synset.name().split('.')[1] in (WN_ADJECTIVE, WN_ADJECTIVE_SATELLITE)]
+                           and l.synset().name().split('.')[1] in (WN_ADJECTIVE, WN_ADJECTIVE_SATELLITE)]
 
     # Extract the words from the lemmas
     words = [l.name() for l in related_noun_lemmas]
