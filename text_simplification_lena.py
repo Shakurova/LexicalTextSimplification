@@ -33,8 +33,9 @@ input = 'Her face was a synthesis of perfect symmetry and unusual proportion; he
 
 # Load ngrams frequenct dictionary
 ngrams = pd.read_csv('ngrams.csv')
-area_dict = dict(zip(ngrams.bigram, ngrams.freq))
-# print(area_dict)
+ngrams = ngrams.drop_duplicates(subset='bigram', keep='first')
+ngram_freq_dict = dict(zip(ngrams.bigram, ngrams.freq))
+# print(ngram_freq_dict)
 
 
 def generate_freq_dict():
@@ -57,10 +58,10 @@ def frequency_approach(freq_dict, input):
         freqToken = [None]*len(tokens)
         for index, token in enumerate(tokens):
             freqToken[index] = freq_dict.freq(token)
-        print('freqToken = {}'.format(freqToken))
+        # print('freqToken = {}'.format(freqToken))
 
         sortedtokens = [f for (t, f) in sorted(zip(freqToken, tokens))]
-        print(sortedtokens)
+        # print(sortedtokens)
 
         n = int(0.3 * len(tokens))
         # print('n = ' + str(n))
@@ -72,7 +73,7 @@ def frequency_approach(freq_dict, input):
             difficultWords.append(difficultWord)
             replacement_candidate = {}
 
-            # 2. Generate candidates
+            # 2. Generate candidatess
             for synset in wordnet.synsets(difficultWord):
                 for lemma in synset.lemmas():
                     replacement_candidate[lemma.name()] = freq_dict.freq(lemma.name())
@@ -87,7 +88,7 @@ def frequency_approach(freq_dict, input):
                 output.append(final_word[token])
             else:
                 output.append(token)
-        print(output)
+        # print(output)
 
         # # Jelmer tense thingie
         # output = []
@@ -123,19 +124,23 @@ def return_synonyms(word):
     return replacement_candidate
 
 
-def check_if_word_fits_the_context(word1, word2, left, right):
-    """ Check if bigrm with the replacement exists. """
-    ############# TEST ##################
-    if left + ' ' + word2 in ngrams and word2 + ' ' + right in ngrams:
+# For the word in the sentence, check if the replacement bigram is valid. If there are more than one instance of a word, pass index as a position to search from.
+def check_if_replacement_fits_the_context(sentence, word, replacement, index = 0):
+    words = sentence.split()
+    ind = words.index(word)
+
+    if ind > 0 and words[ind - 1] + ' ' + replacement in ngram_freq_dict.keys():
         return True
-    else:
-        return False
+    if ind < len(words) - 1 and replacement + ' ' + words[ind + 1] in ngram_freq_dict.keys():
+        return True
+
+    return False
 
 
 def generate_word2vec_candidates(word, topn=10):
     """ Return top words from word2vec for each word in input. """
     candidates = set()
-    print(word)
+    # print(word)
     if check_if_replacable(word) and word in model:
         # print(word[0])
         # print(model.most_similar(word[0], topn=topn))
@@ -160,8 +165,8 @@ def generate_wordnet_candidates(word):
 def check_if_replacable(word):
     """ Check POS and frequency; """
     word_tag = pos_tag([word])
-    print(word, word.istitle())
-    if 'NN' in word_tag[0][1] or 'JJ' in word_tag[0][1] or 'VB' in word_tag[0][1] and freq_dict.freq(word) > 0.5 and word.istitle() is False:
+    # print(word, word.istitle())
+    if 'NN' in word_tag[0][1] or 'JJ' in word_tag[0][1] or 'VB' in word_tag[0][1]:
         return True
     else:
         return False
@@ -180,10 +185,10 @@ def simplify(input):
         freqToken = [None]*len(tokens)
         for index, token in enumerate(tokens):
             freqToken[index] = freq_dict.freq(token)
-        print('freqToken = {}'.format(freqToken))
+        # print('freqToken = {}'.format(freqToken))
 
         sortedtokens = [f for (t, f) in sorted(zip(freqToken, tokens))]
-        print(sortedtokens)
+        # print(sortedtokens)
 
         n = int(0.3 * len(tokens))
         # print('n = ' + str(n))
@@ -210,7 +215,7 @@ def simplify(input):
                 output.append(final_word[token])
             else:
                 output.append(token)
-        print(output)
+        # print(output)
         simplified += ' '.join(output)
 
     return simplified
@@ -219,7 +224,7 @@ if __name__ == '__main__':
     freq_dict = generate_freq_dict()
     # print(freq_dict)
 
-    frequency_approach(freq_dict, input)
+    # frequency_approach(freq_dict, input)
 
     # # # Generate word2vec candidates:
     # for word in pos_tag(word_tokenize(input)):
