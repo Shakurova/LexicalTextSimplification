@@ -27,7 +27,9 @@ model = gensim.models.KeyedVectors.load_word2vec_format('./model/GoogleNews-vect
 from nltk import sent_tokenize, word_tokenize, pos_tag
 from functions import convert
 
+# input = 'These theorists were sometimes only loosely affiliated, and some authors point out that the "Frankfurt circle" was neither a philosophical school nor a political group. Nevertheless, they spoke with a common paradigm in mind; they shared the Marxist Hegelian premises and were preoccupied with similar questions.'
 input = 'Her face was a synthesis of perfect symmetry and unusual proportion; he could have gazed at it for hours, trying to locate the source of its fascination.'
+
 
 # Load ngrams frequenct dictionary
 ngrams = pd.read_csv('ngrams.csv')
@@ -61,7 +63,7 @@ def frequency_approach(freq_dict, input):
         print(sortedtokens)
 
         n = int(0.3 * len(tokens))
-        #print('n = ' + str(n))
+        # print('n = ' + str(n))
 
         # 1. Select difficult words
         difficultWords = []
@@ -130,29 +132,27 @@ def check_if_word_fits_the_context(word1, word2, left, right):
         return False
 
 
-def generate_word2vec_candidates(input, topn=10):
+def generate_word2vec_candidates(word, topn=10):
     """ Return top words from word2vec for each word in input. """
-    candidates = {}
-    for word in pos_tag(word_tokenize(input)):
-        if word[0] in model and ('NN' in word[1] or 'JJ' in word[1] or 'VB' in word[1]):
-            # print(word[0])
-            # print(model.most_similar(word[0], topn=topn))
-            candidates[word[0]] = [word[0] for word in model.most_similar(word[0], topn=topn)]
+    candidates = set()
+    print(word)
+    if check_if_replacable(word) and word in model:
+        # print(word[0])
+        # print(model.most_similar(word[0], topn=topn))
+        candidates = [word[0] for word in model.most_similar(word, topn=topn)]
 
     return candidates
 
 
-def generate_wordnet_candidates(input):
+def generate_wordnet_candidates(word):
     """ Generate wordnet candidates for each word in input. """
-    candidates = {}
-    for word in word_tokenize(input):
-        if check_if_replacable(word):
-            candidates[word] = set()
-            for synset in wordnet.synsets(word):
-                for lemma in synset.lemmas():
-                    candidates[word].add(lemma.name())
-                # for lemma in synset.lemmas():
-                #     candidates[lemma.name()] = freq_dict.freq(lemma.name())
+    candidates = set()
+    if check_if_replacable(word):
+        for synset in wordnet.synsets(word):
+            for lemma in synset.lemmas():
+                candidates.add(lemma.name())
+            # for lemma in synset.lemmas():
+            #     candidates[lemma.name()] = freq_dict.freq(lemma.name())
 
     return candidates
 
@@ -160,10 +160,60 @@ def generate_wordnet_candidates(input):
 def check_if_replacable(word):
     """ Check POS and frequency; """
     word_tag = pos_tag([word])
-    if 'NN' in word_tag[0][1] or 'JJ' in word_tag[0][1] or 'VB' in word_tag[0][1] and freq_dict.freq(word) > 0.5:
+    print(word, word.istitle())
+    if 'NN' in word_tag[0][1] or 'JJ' in word_tag[0][1] or 'VB' in word_tag[0][1] and freq_dict.freq(word) > 0.5 and word.istitle() is False:
         return True
     else:
         return False
+
+
+def simplify(input):
+    simplified = ''
+
+    sents = sent_tokenize(input)  # Split by sentences
+
+    final_word = {}
+    for sent in sents:
+        tokens = word_tokenize(sent)    # Split a sentence by words
+
+        # Rank by frequency
+        freqToken = [None]*len(tokens)
+        for index, token in enumerate(tokens):
+            freqToken[index] = freq_dict.freq(token)
+        print('freqToken = {}'.format(freqToken))
+
+        sortedtokens = [f for (t, f) in sorted(zip(freqToken, tokens))]
+        print(sortedtokens)
+
+        n = int(0.3 * len(tokens))
+        # print('n = ' + str(n))
+
+        # 1. Select difficult words
+        difficultWords = []
+        for i in range(0, n):
+            difficultWord = sortedtokens[i]
+            difficultWords.append(difficultWord)
+            replacement_candidate = {}
+
+            for option in generate_word2vec_candidates(difficultWord):
+                replacement_candidate[option] = freq_dict.freq(option)
+            for option in generate_wordnet_candidates(difficultWord):
+                replacement_candidate[option] = freq_dict.freq(option)
+
+            # 3. Select the candidate with the highest frequency
+            if len(replacement_candidate) > 0:
+                final_word[difficultWord] = max(replacement_candidate, key=lambda i: replacement_candidate[i])
+
+        output = []
+        for token in tokens:
+            if token in difficultWords and token in final_word and token.istitle() is False:  # replace word if in is difficult and a candidate was found
+                output.append(final_word[token])
+            else:
+                output.append(token)
+        print(output)
+        simplified += ' '.join(output)
+
+    return simplified
 
 if __name__ == '__main__':
     freq_dict = generate_freq_dict()
@@ -171,13 +221,18 @@ if __name__ == '__main__':
 
     frequency_approach(freq_dict, input)
 
-    # Generate word2vec candidates:
-    print(generate_word2vec_candidates(input))
-    print(generate_wordnet_candidates(input))
+    # # # Generate word2vec candidates:
+    # for word in pos_tag(word_tokenize(input)):
+    #     print(word)
+    #     print(generate_word2vec_candidates(word[0]))
+    #     print(generate_wordnet_candidates(word[0]))
 
     # Choose suitable word:
     # Should be of the same part of speech
     # Should be more frequent that the original word (first do lemmatisation and then check frequency)
+
+    print(input)
+    print(simplify(input))
 
 # Todo:
 # choose complex word (long and not frequent)
