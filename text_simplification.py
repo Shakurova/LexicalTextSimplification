@@ -10,7 +10,8 @@ import re
 from nltk.corpus import brown
 from nltk.probability import *
 from nltk.corpus import wordnet
-from nltk import sent_tokenize, word_tokenize
+from nltk import sent_tokenize, word_tokenize, pos_tag
+from functions import convert
 
 input = 'Her face was a synthesis of perfect symmetry and unusual proportion; he could have gazed at it for hours, trying to locate the source of its fascination.'
 
@@ -35,13 +36,13 @@ def frequency_approach(freq_dict, input):
         freqToken = [None]*len(tokens)
         for index, token in enumerate(tokens):
             freqToken[index] = freq_dict.freq(token)
-        print(freqToken)
+        print('freqToken = {}'.format(freqToken))
 
         sortedtokens = [f for (t, f) in sorted(zip(freqToken, tokens))]
         print(sortedtokens)
 
         n = int(0.3 * len(tokens))
-        print(n)
+        #print('n = ' + str(n))
 
         # 1. Select difficult words
         difficultWords = []
@@ -59,15 +60,22 @@ def frequency_approach(freq_dict, input):
             if len(replacement_candidate) > 0:
                 final_word[difficultWord] = max(replacement_candidate, key=lambda i: replacement_candidate[i])
 
+        output = []
         for token in tokens:
             if token in difficultWords and token in final_word:  # replace word if in is difficult and a candidate was found
-                print(final_word[token])
+                fw_in_tense = convert(final_word[token],pos_tag([final_word[token]])[0][1],pos_tag([token])[0][1])
+                if fw_in_tense == []:
+                    output.append(final_word)
+                else:
+                    output.append() # print(final_word[token])
             else:
-                print(token)
+                output.append(token) #print(token)
+        print(output)
+
 
 if __name__ == '__main__':
     freq_dict = generate_freq_dict()
-    print(freq_dict)
+    #print(freq_dict)
 
     frequency_approach(freq_dict, input)
 
