@@ -12,6 +12,7 @@ import ujson
 from nltk.corpus import brown
 from nltk.probability import *
 from nltk.corpus import wordnet
+from nltk import sent_tokenize, word_tokenize, pos_tag
 from nltk import sent_tokenize, word_tokenize
 import gensim
 import _pickle as pickle
@@ -81,15 +82,24 @@ def frequency_approach(freq_dict, input):
         output = []
         for token in tokens:
             if token in difficultWords and token in final_word:  # replace word if in is difficult and a candidate was found
-                fw_in_tense = convert(final_word[token],pos_tag([final_word[token]])[0][1],pos_tag([token])[0][1])
-                if fw_in_tense == []:
-                    output.append(final_word)
-                else:
-                    output.append() # print(final_word[token])
+                output.append(final_word[token])
             else:
-                output.append(token) #print(token)
+                output.append(token)
         print(output)
 
+        # # Jelmer tense thingie
+        # output = []
+        # for token in tokens:
+        #     if token in difficultWords and token in final_word:  # replace word if in is difficult and a candidate was found
+        #         fw_in_tense = convert(final_word[token], pos_tag([final_word[token]])[0][1], pos_tag([token])[0][1])
+        #         if fw_in_tense == []:
+        #             output.append(final_word)
+        #         else:
+        #             output.append() # print(final_word[token])
+        #     else:
+        #         output.append(token) #print(token)
+        #
+        # print(output)
 
 
 def check_length(word):
@@ -120,27 +130,54 @@ def check_if_word_fits_the_context(word1, word2, left, right):
         return False
 
 
-def return_word2vec(word, topn=10):
-    """ Return top words from word2vec. """
-    if word in model:
-        print(word)
-        print(model.most_similar(word, topn=topn))
-        return [word[0] for word in model.most_similar(word, topn=10)]
+def generate_word2vec_candidates(input, topn=10):
+    """ Return top words from word2vec for each word in input. """
+    candidates = {}
+    for word in pos_tag(word_tokenize(input)):
+        if word[0] in model and ('NN' in word[1] or 'JJ' in word[1] or 'VB' in word[1]):
+            # print(word[0])
+            # print(model.most_similar(word[0], topn=topn))
+            candidates[word[0]] = [word[0] for word in model.most_similar(word[0], topn=topn)]
+
+    return candidates
+
+
+def generate_wordnet_candidates(input):
+    """ Generate wordnet candidates for each word in input. """
+    candidates = {}
+    for word in word_tokenize(input):
+        if check_if_replacable(word):
+            candidates[word] = set()
+            for synset in wordnet.synsets(word):
+                for lemma in synset.lemmas():
+                    candidates[word].add(lemma.name())
+                # for lemma in synset.lemmas():
+                #     candidates[lemma.name()] = freq_dict.freq(lemma.name())
+
+    return candidates
+
+
+def check_if_replacable(word):
+    """ Check POS and frequency; """
+    word_tag = pos_tag([word])
+    if 'NN' in word_tag[0][1] or 'JJ' in word_tag[0][1] or 'VB' in word_tag[0][1] and freq_dict.freq(word) > 0.5:
+        return True
     else:
-        return []
+        return False
 
 if __name__ == '__main__':
     freq_dict = generate_freq_dict()
-    #print(freq_dict)
+    # print(freq_dict)
 
     frequency_approach(freq_dict, input)
 
-    # New approach
-    for word in word_tokenize(input):
-        if word in model:
-            print(word)
-            print(model.most_similar(word, topn=10))
+    # Generate word2vec candidates:
+    print(generate_word2vec_candidates(input))
+    print(generate_wordnet_candidates(input))
 
+    # Choose suitable word:
+    # Should be of the same part of speech
+    # Should be more frequent that the original word (first do lemmatisation and then check frequency)
 
 # Todo:
 # choose complex word (long and not frequent)
@@ -156,7 +193,10 @@ if __name__ == '__main__':
 # 2. Generator (generate suitable candidates)
 # 3. Ranker
 
+# Word2vec, synonyms, ppdb
 
-# word2vec, synonyms, ppdb
+# Use ngrams to check the context
 
-# use ngrams to check the context
+# Today:
+# 1. Word2vec suggestions - only for nouns, verbs and adjectives (everything that starts with NN, VB, JJ)
+# 2. Check if fit context (ngrams)
