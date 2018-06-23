@@ -84,10 +84,21 @@ def check_if_word_fits_the_context(context, token, replacement):
         print('replacement', context[0] + ' ' + replacement, ngram_freq_dict[(context[0] + ' ' + replacement).lower()])
         return True
     if (replacement + ' ' + context[2]).lower() in ngram_freq_dict.keys():
-        print('replacement', replacement + ' ' + context[2], ngram_freq_dict[replacement + ' ' + context[2]])
+        print('replacement', replacement + ' ' + context[2], ngram_freq_dict[(replacement + ' ' + context[2]).lower()])
         return True
     else:
         return False
+
+
+def return_bigram_score(context, token, replacement):
+    score = 0
+    if (context[0] + ' ' + replacement).lower() in ngram_freq_dict.keys():
+        print('score', context[0] + ' ' + replacement, ngram_freq_dict[(context[0] + ' ' + replacement).lower()])
+        score += ngram_freq_dict[(context[0] + ' ' + replacement).lower()]
+    if (replacement + ' ' + context[2]).lower() in ngram_freq_dict.keys():
+        print('score', replacement + ' ' + context[2], ngram_freq_dict[(replacement + ' ' + context[2]).lower()])
+        score += ngram_freq_dict[(replacement + ' ' + context[2]).lower()]
+    return score / 2
 
 
 def generate_word2vec_candidates(word, topn=15):
@@ -97,7 +108,8 @@ def generate_word2vec_candidates(word, topn=15):
     if check_if_replacable(word) and word in model:
         # print(word[0])
         # print(model.most_similar(word[0], topn=topn))
-        candidates = [word[0] for word in model.most_similar(word, topn=topn)]
+        # candidates = [option[0].lower() for option in model.most_similar(word, topn=topn) if word != option[0]]
+        candidates = [convert(option[0].lower(), word) for option in model.most_similar(word, topn=topn) if word != convert(option[0].lower(), word)]
 
     return candidates
 
@@ -108,7 +120,10 @@ def generate_wordnet_candidates(word):
     if check_if_replacable(word):
         for synset in wordnet.synsets(word):
             for lemma in synset.lemmas():
-                candidates.add(lemma.name())
+                # if lemma.name() != word:
+                if convert(lemma.name().lower(), word) != word:
+                    # candidates.add(lemma.name().lower())
+                    candidates.add(convert(lemma.name().lower(), word))
             # for lemma in synset.lemmas():
             #     candidates[lemma.name()] = freq_dict.freq(lemma.name())
 
@@ -148,6 +163,7 @@ def simplify(input):
         # print('n = ' + str(n))
 
         # 1. Select difficult words
+        all_options = {}
         difficultWords = []
         for i in range(0, n):
             difficultWord = sortedtokens[i]
@@ -160,10 +176,53 @@ def simplify(input):
             for option in generate_wordnet_candidates(difficultWord):
                 replacement_candidate[option] = freq_dict.freq(option)
 
+            all_options[difficultWord] = replacement_candidate
             # 3. Select the candidate with the highest frequency
             if len(replacement_candidate) > 0:
                 final_word[difficultWord] = max(replacement_candidate, key=lambda i: replacement_candidate[i])
+                print('!!!replacement_candidate', replacement_candidate)
 
+        best_candidates = {}
+        print('all options', all_options)
+        # Keep only suitable candidates
+        for token_id in range(len(tokens)):
+            token = tokens[token_id]
+            best_candidates[token] = {}
+            if token in all_options:
+                print(token, ':', all_options[token])
+                # options[token] = list of options
+                # iterate over list of options
+                for opt in all_options[token]:
+                    fw_in_tense = convert(opt, token)
+                    print('option: ', opt)
+                    if check_if_word_fits_the_context(tokens[token_id - 1:token_id + 2], token, fw_in_tense):
+                        print('GOOD', tokens[token_id - 1:token_id + 2], token, opt, fw_in_tense)
+                        print(return_bigram_score(tokens[token_id - 1:token_id + 2], token, fw_in_tense))
+                        # best_candidates[token][fw_in_tense] = return_bigram_score(tokens[token_id - 1:token_id + 2], token, fw_in_tense)
+                        best_candidates[token][fw_in_tense] = return_bigram_score(tokens[token_id - 1:token_id + 2], token, fw_in_tense)
+                    else:
+                        print('BAD', tokens[token_id - 1:token_id + 2], token, opt, fw_in_tense)
+                        print(return_bigram_score(tokens[token_id - 1:token_id + 2], token, fw_in_tense))
+                # check_if_word_fits_the_context returns average frequency - then take the bigram with the highest average frequency
+
+        print('BEST CANDIDATES', best_candidates)
+
+        # Generate replacements0
+        output = []
+        for word in tokens:
+            if word in best_candidates:
+                # for word in best_candidates:
+                if word.istitle() is False and best_candidates[word]!= {}:
+                    print('best_candidates[word]', word, best_candidates[word])
+                    print(max(best_candidates[word], key=lambda i: best_candidates[word][i]))
+                    output.append(max(best_candidates[word], key=lambda i: best_candidates[word][i]))
+                else:
+                    output.append(word)
+            else:
+                output.append(word)
+        print('v0', ' '.join(output))
+
+        # Generate replacements1
         output = []
         for token_id in range(len(tokens)):
             token = tokens[token_id]
@@ -181,6 +240,8 @@ def simplify(input):
                 output.append(token)
         print('v1', ' '.join(output))
 
+        # Generate replacements2
+        output = []
         for token in tokens:
             if token in difficultWords and token in final_word and token.istitle() is False:  # Replace word if in is difficult and a candidate was found
                 fw_in_tense = convert(final_word[token], token)
@@ -205,7 +266,7 @@ if __name__ == '__main__':
     # Should be more frequent that the original word (first do lemmatisation and then check frequency)
 
     print(simplify(input))
-    print(input)
+    print('original', input)
 
 # Todo:
 # choose complex word (long and not frequent)
