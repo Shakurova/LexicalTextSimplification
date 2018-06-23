@@ -66,7 +66,7 @@ def return_synonyms(word):
 
 
 def check_if_word_fits_the_context(context, token, replacement):
-    """ Check if bigrm with the replacement exists. """
+    """ Check if bigram with the replacement exists. """
     # Todo: combine in a single condition
     if (context[0] + ' ' + replacement).lower() in ngram_freq_dict.keys():
         print('replacement', context[0] + ' ' + replacement, ngram_freq_dict[(context[0] + ' ' + replacement).lower()])
