@@ -65,9 +65,9 @@ def frequency_approach(freq_dict, input):
             if token in difficultWords and token in final_word:  # replace word if in is difficult and a candidate was found
                 fw_in_tense = convert(final_word[token],pos_tag([final_word[token]])[0][1],pos_tag([token])[0][1])
                 if fw_in_tense == []:
-                    output.append(final_word)
+                    output.append(final_word[token])
                 else:
-                    output.append() # print(final_word[token])
+                    output.append(fw_in_tense[0][0]) # print(final_word[token])
             else:
                 output.append(token) #print(token)
         print(output)
@@ -85,7 +85,7 @@ if __name__ == '__main__':
 # choose candidates - from dictionary of synonyms abd top word2vec words - check for gender, tense
 # choose suitable - those who occur in ngram dictionary
 
-# Am I using ppdb?
+# Am I using paraphrasing?
 
 # a lot of functions from here
 # https://github.com/SIMPATICOProject/SimpaticoTAEServer/blob/master/lexical_simplification_server/lib.py

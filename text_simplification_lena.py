@@ -33,7 +33,6 @@ input = 'These theorists were sometimes only loosely affiliated, and some author
 ngrams = pd.read_csv('ngrams.csv')
 ngrams = ngrams.drop_duplicates(subset='bigram', keep='first')
 ngram_freq_dict = dict(zip(ngrams.bigram, ngrams.freq))
-# print(ngram_freq_dict)
 
 
 def generate_freq_dict():
@@ -64,17 +63,19 @@ def return_synonyms(word):
     return replacement_candidate
 
 
-# For the word in the sentence, check if the replacement bigram is valid. If there are more than one instance of a word, pass index as a position to search from.
-def check_if_replacement_fits_the_context(sentence, word, replacement, index = 0):
-    words = sentence.split()
-    ind = words.index(word, index+1)
 
-    if ind > 0 and words[ind - 1] + ' ' + replacement in ngram_freq_dict.keys():
-        return True
-    if ind < len(words) - 1 and replacement + ' ' + words[ind + 1] in ngram_freq_dict.keys():
-        return True
 
-    return False
+def check_if_word_fits_the_context(context, token, replacement):
+    """ Check if bigrm with the replacement exists. """
+    # Todo: combine in a single condition
+    if (context[0] + ' ' + replacement).lower() in ngram_freq_dict.keys():
+        print('replacement', context[0] + ' ' + replacement, ngram_freq_dict[(context[0] + ' ' + replacement).lower()])
+        return True
+    elif (replacement + ' ' + context[2]).lower() in ngram_freq_dict.keys():
+        print('replacement', replacement + ' ' + context[2], ngram_freq_dict[replacement + ' ' + context[2]])
+        return True
+    else:
+        return False
 
 
 def generate_word2vec_candidates(word, topn=15):
@@ -141,6 +142,7 @@ def simplify(input):
             difficultWords.append(difficultWord)
             replacement_candidate = {}
 
+            # 2. Generate candidates
             for option in generate_word2vec_candidates(difficultWord):
                 replacement_candidate[option] = freq_dict.freq(option)
             for option in generate_wordnet_candidates(difficultWord):
@@ -151,30 +153,40 @@ def simplify(input):
                 final_word[difficultWord] = max(replacement_candidate, key=lambda i: replacement_candidate[i])
 
         output = []
+        for token_id in range(len(tokens)):
+            token = tokens[token_id]
+            if token in difficultWords and token in final_word and token.istitle() is False:
+                if token_id != 0 and token_id != len(tokens):
+                    fw_in_tense = convert(final_word[token], token)
+                    if check_if_word_fits_the_context(tokens[token_id-1:token_id+2], token, fw_in_tense):
+                        # output.append(final_word[token])
+                        output.append(fw_in_tense)
+                    else:
+                        output.append(token)
+                else:
+                    output.append(token)
+            else:
+                output.append(token)
+        print('v1', ' '.join(output))
+
         for token in tokens:
             if token in difficultWords and token in final_word and token.istitle() is False:  # Replace word if in is difficult and a candidate was found
                 fw_in_tense = convert(final_word[token], token)
-                print('tense', final_word[token], token, fw_in_tense)
+                # print('tense', final_word[token], token, fw_in_tense)
                 # output.append(final_word[token])
                 output.append(fw_in_tense)
             else:
                 output.append(token)
-        # print(output)
+        print('v2', ' '.join(output))
         simplified += ' '.join(output)
 
     return simplified
 
 if __name__ == '__main__':
     freq_dict = generate_freq_dict()
-    # print(freq_dict)
 
-    # # # Generate word2vec candidates:
-    # for word in pos_tag(word_tokenize(input)):
-    #     print(word)
-    #     print(generate_word2vec_candidates(word[0]))
-    #     print(generate_wordnet_candidates(word[0]))
-
-    # Try ppdf
+    # Generate ppdb candidates:
+    # Using lexical thing
 
     # Choose suitable word:
     # Should be of the same part of speech
