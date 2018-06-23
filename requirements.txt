@@ -1,0 +1,4 @@
+pandas
+ujson
+nltk
+gensim
