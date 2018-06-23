@@ -19,13 +19,13 @@ import _pickle as pickle
 
 
 import logging
+from conjugation import convert
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
 # Load Google's pre-trained Word2Vec model.
 model = gensim.models.KeyedVectors.load_word2vec_format('./model/GoogleNews-vectors-negative300-SLIM.bin', binary=True)
 from nltk import sent_tokenize, word_tokenize, pos_tag
-from functions import convert
 
 # input = 'These theorists were sometimes only loosely affiliated, and some authors point out that the "Frankfurt circle" was neither a philosophical school nor a political group. Nevertheless, they spoke with a common paradigm in mind; they shared the Marxist Hegelian premises and were preoccupied with similar questions.'
 input = 'Her face was a synthesis of perfect symmetry and unusual proportion; he could have gazed at it for hours, trying to locate the source of its fascination.'
@@ -45,64 +45,6 @@ def generate_freq_dict():
         for word in sentence:
             freq_dict[word] += 1
     return freq_dict
-
-
-def frequency_approach(freq_dict, input):
-    sents = sent_tokenize(input)  # Split by sentences
-
-    final_word = {}
-    for sent in sents:
-        tokens = word_tokenize(sent)    # Split a sentence by words
-
-        # Rank by frequency
-        freqToken = [None]*len(tokens)
-        for index, token in enumerate(tokens):
-            freqToken[index] = freq_dict.freq(token)
-        # print('freqToken = {}'.format(freqToken))
-
-        sortedtokens = [f for (t, f) in sorted(zip(freqToken, tokens))]
-        # print(sortedtokens)
-
-        n = int(0.3 * len(tokens))
-        # print('n = ' + str(n))
-
-        # 1. Select difficult words
-        difficultWords = []
-        for i in range(0, n):
-            difficultWord = sortedtokens[i]
-            difficultWords.append(difficultWord)
-            replacement_candidate = {}
-
-            # 2. Generate candidatess
-            for synset in wordnet.synsets(difficultWord):
-                for lemma in synset.lemmas():
-                    replacement_candidate[lemma.name()] = freq_dict.freq(lemma.name())
-
-            # 3. Select the candidate with the highest frequency
-            if len(replacement_candidate) > 0:
-                final_word[difficultWord] = max(replacement_candidate, key=lambda i: replacement_candidate[i])
-
-        output = []
-        for token in tokens:
-            if token in difficultWords and token in final_word:  # replace word if in is difficult and a candidate was found
-                output.append(final_word[token])
-            else:
-                output.append(token)
-        # print(output)
-
-        # # Jelmer tense thingie
-        # output = []
-        # for token in tokens:
-        #     if token in difficultWords and token in final_word:  # replace word if in is difficult and a candidate was found
-        #         fw_in_tense = convert(final_word[token], pos_tag([final_word[token]])[0][1], pos_tag([token])[0][1])
-        #         if fw_in_tense == []:
-        #             output.append(final_word)
-        #         else:
-        #             output.append() # print(final_word[token])
-        #     else:
-        #         output.append(token) #print(token)
-        #
-        # print(output)
 
 
 def check_length(word):
@@ -127,7 +69,7 @@ def return_synonyms(word):
 # For the word in the sentence, check if the replacement bigram is valid. If there are more than one instance of a word, pass index as a position to search from.
 def check_if_replacement_fits_the_context(sentence, word, replacement, index = 0):
     words = sentence.split()
-    ind = words.index(word)
+    ind = words.index(word, index+1)
 
     if ind > 0 and words[ind - 1] + ' ' + replacement in ngram_freq_dict.keys():
         return True
@@ -167,6 +109,7 @@ def check_if_replacable(word):
     word_tag = pos_tag([word])
     # print(word, word.istitle())
     if 'NN' in word_tag[0][1] or 'JJ' in word_tag[0][1] or 'VB' in word_tag[0][1]:
+        # print('replacable', word_tag)
         return True
     else:
         return False
@@ -211,8 +154,11 @@ def simplify(input):
 
         output = []
         for token in tokens:
-            if token in difficultWords and token in final_word and token.istitle() is False:  # replace word if in is difficult and a candidate was found
-                output.append(final_word[token])
+            if token in difficultWords and token in final_word and token.istitle() is False:  # Replace word if in is difficult and a candidate was found
+                fw_in_tense = convert(final_word[token], token)
+                print('tense', final_word[token], token, fw_in_tense)
+                # output.append(final_word[token])
+                output.append(fw_in_tense)
             else:
                 output.append(token)
         # print(output)
