@@ -9,8 +9,11 @@ from pattern.en import parse
 
 
 def convert(word_from, word_to):
-    print(tag(word_to))
-    print(tag(word_from))
+    """ Analyses POS tags and converts words to a desired form. """
+    # Todo: NOUN to Adjective conversion
+
+    # print(tag(word_to))
+    # print(tag(word_from))
     if tag(word_to)[0][1] == 'VBD':
         converted = conjugate(word_from, 'past')
     elif tag(word_to)[0][1] == 'VBN':
@@ -21,12 +24,13 @@ def convert(word_from, word_to):
         converted = conjugate(word_from, 'present', '1sg')
     elif tag(word_to)[0][1] == 'VB':
         converted = conjugate(word_from, 'infinitive')
-    elif tag(word_to)[0][1] == 'NN':
+    elif tag(word_to)[0][1] == 'NN' and tag(word_from)[0][1] == 'NNS':
         converted = singularize(word_from)
-    elif tag(word_to)[0][1] == 'NNS':
+    elif tag(word_to)[0][1] == 'NNS' and tag(word_from)[0][1] == 'NN':
         converted = pluralize(word_from)
     else:
         converted = word_from
+
     return converted
 
 if __name__ == "__main__":

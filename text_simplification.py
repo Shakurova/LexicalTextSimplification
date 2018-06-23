@@ -22,6 +22,8 @@ model = gensim.models.KeyedVectors.load_word2vec_format('./model/GoogleNews-vect
 ngrams = pd.read_csv('ngrams.csv')
 ngrams = ngrams.drop_duplicates(subset='bigram', keep='first')
 
+steps = open('steps.txt', 'w')
+
 
 def generate_freq_dict():
     """ Create frequency dictionary based on BROWN corpora. """
@@ -49,6 +51,7 @@ class Simplifier:
 
     def return_bigram_score(self, context, token, replacement):
         """ Return ad averaged frequency of left- and right-context bigram. """
+        # Todo: incorporate word2vec value
         score = 0
         if (context[0] + ' ' + replacement).lower() in self.ngram_freq_dict.keys():
             score += self.ngram_freq_dict[(context[0] + ' ' + replacement).lower()]
@@ -108,6 +111,7 @@ class Simplifier:
         # freq_top_n = sorted(self.freq_dict.values(), reverse=True)[top_n - 1]
 
         for sent in sents:
+            steps.write(sent + '\n')
             tokens = word_tokenize(sent)  # Split a sentence by words
 
             # Find difficult words - long and unfrequent
@@ -119,6 +123,7 @@ class Simplifier:
                 freqToken[index] = self.freq_dict.freq(token)
             sortedtokens = [f for (t, f) in sorted(zip(freqToken, tokens))]
             difficultWords = [sortedtokens[i] for i in range(0, int(0.3 * len(tokens)))]  # take top 30% of unfrequent words
+            steps.write('difficultWords:' + str(difficultWords) + '\n')
 
             all_options = {}
             for difficultWord in difficultWords:
@@ -132,6 +137,7 @@ class Simplifier:
 
                 # 2.1. Replacement options with frequency
                 all_options[difficultWord] = replacement_candidate
+            steps.write('all_options:' + str(all_options) + '\n')
 
             # 2.2. Replacement options with bigram score
             best_candidates = {}
@@ -140,24 +146,25 @@ class Simplifier:
                 best_candidates[token] = {}
                 if token in all_options:
                     for opt in all_options[token]:
-                        fw_in_tense = convert(opt, token)  # convert to correct tense
                         if token_id != 0 and token_id != len(tokens):  # if not the first or the last word in the sentence
-                            if self.check_if_word_fits_the_context(tokens[token_id - 1:token_id + 2], token, fw_in_tense):
+                            if self.check_if_word_fits_the_context(tokens[token_id - 1:token_id + 2], token, opt):
                                 # Return all candidates with its bigram scores
-                                best_candidates[token][fw_in_tense] = self.return_bigram_score(tokens[token_id - 1:token_id + 2], token, fw_in_tense)
+                                best_candidates[token][opt] = self.return_bigram_score(tokens[token_id - 1:token_id + 2], token, opt)
+            steps.write('best_candidates:' + str(best_candidates) + '\n')
 
             # 3. Generate replacements0 - take the word with the highest bigram score
             output = []
-            for word in tokens:
-                if word in best_candidates:
-                    if word.istitle() is False and best_candidates[word] != {}:
-                        # Choose best
-                        best = max(best_candidates[word], key=lambda i: best_candidates[word][i])
+            for token in tokens:
+                if token in best_candidates:
+                    if token.istitle() is False and best_candidates[token] != {}:
+                        # Choose the one with the highest bigram score
+                        best = max(best_candidates[token], key=lambda i: best_candidates[token][i])
+                        steps.write('best v1:' + str(token) + ' -> ' + str(best) + '\n')
                         output.append(best)
                     else:
-                        output.append(word)
+                        output.append(token)
                 else:
-                    output.append(word)
+                    output.append(token)
             print('v0', ' '.join(output))
             simplified0 += ' '.join(output)
 
@@ -169,17 +176,15 @@ class Simplifier:
                     if token_id != 0 and token_id != len(tokens):
                         # Choose most frequent
                         best = max(all_options[token], key=lambda i: all_options[token][i])
-                        # Convert
-                        fw_in_tense = convert(best, token)
-                        if self.check_if_word_fits_the_context(tokens[token_id - 1:token_id + 2], token, fw_in_tense):
-                            output.append(fw_in_tense)
+                        steps.write('best v2:' + str(token) + ' -> ' + str(best) + '\n')
+                        if self.check_if_word_fits_the_context(tokens[token_id - 1:token_id + 2], token, best):
+                            output.append(best)
                         else:
                             output.append(token)
                     else:
                         output.append(token)
                 else:
                     output.append(token)
-
             print('v1', ' '.join(output))
             simplified1 += ' '.join(output)
 
@@ -189,8 +194,8 @@ class Simplifier:
                 # Replace word if in is difficult and a candidate was found
                 if token in all_options and len(all_options[token]) > 0 and token in difficultWords and token.istitle() is False:
                     best = max(all_options[token], key=lambda i: all_options[token][i])
-                    fw_in_tense = convert(best, token)
-                    output.append(fw_in_tense)
+                    steps.write('best v3:' + str(token) + ' -> ' + str(best) + '\n')
+                    output.append(best)
                 else:
                     output.append(token)
             print('v2', ' '.join(output))
@@ -202,8 +207,8 @@ class Simplifier:
 if __name__ == '__main__':
     simplifier = Simplifier()
 
-    with open('testset.txt') as f:
-        with open('output4.txt', 'w') as w:
+    with open('input.txt') as f:
+        with open('output.csv', 'w') as w:
             for input in f:
                 simplified0, simplified1, simplified2 = simplifier.simplify(input)
                 print('Original', input)
