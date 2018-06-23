@@ -17,7 +17,6 @@ from nltk import sent_tokenize, word_tokenize
 import gensim
 import _pickle as pickle
 
-
 import logging
 from conjugation import convert
 
@@ -27,9 +26,8 @@ logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=lo
 model = gensim.models.KeyedVectors.load_word2vec_format('./model/GoogleNews-vectors-negative300-SLIM.bin', binary=True)
 from nltk import sent_tokenize, word_tokenize, pos_tag
 
-# input = 'These theorists were sometimes only loosely affiliated, and some authors point out that the "Frankfurt circle" was neither a philosophical school nor a political group. Nevertheless, they spoke with a common paradigm in mind; they shared the Marxist Hegelian premises and were preoccupied with similar questions.'
-input = 'Her face was a synthesis of perfect symmetry and unusual proportion; he could have gazed at it for hours, trying to locate the source of its fascination.'
-
+input = 'These theorists were sometimes only loosely affiliated, and some authors point out that the "Frankfurt circle" was neither a philosophical school nor a political group. Nevertheless, they spoke with a common paradigm in mind; they shared the Marxist Hegelian premises and were preoccupied with similar questions.'
+# input = 'Her face was a synthesis of perfect symmetry and unusual proportion; he could have gazed at it for hours, trying to locate the source of its fascination.'
 
 # Load ngrams frequenct dictionary
 ngrams = pd.read_csv('ngrams.csv')
@@ -79,7 +77,7 @@ def check_if_replacement_fits_the_context(sentence, word, replacement, index = 0
     return False
 
 
-def generate_word2vec_candidates(word, topn=10):
+def generate_word2vec_candidates(word, topn=15):
     """ Return top words from word2vec for each word in input. """
     candidates = set()
     # print(word)
@@ -170,20 +168,20 @@ if __name__ == '__main__':
     freq_dict = generate_freq_dict()
     # print(freq_dict)
 
-    # frequency_approach(freq_dict, input)
-
     # # # Generate word2vec candidates:
     # for word in pos_tag(word_tokenize(input)):
     #     print(word)
     #     print(generate_word2vec_candidates(word[0]))
     #     print(generate_wordnet_candidates(word[0]))
 
+    # Try ppdf
+
     # Choose suitable word:
     # Should be of the same part of speech
     # Should be more frequent that the original word (first do lemmatisation and then check frequency)
 
-    print(input)
     print(simplify(input))
+    print(input)
 
 # Todo:
 # choose complex word (long and not frequent)
@@ -204,5 +202,5 @@ if __name__ == '__main__':
 # Use ngrams to check the context
 
 # Today:
-# 1. Word2vec suggestions - only for nouns, verbs and adjectives (everything that starts with NN, VB, JJ)
+# 1. Word2vec suggestions - only for nouns, verbs and adjectives (everything that starts with NN, VB, JJ and istitle == False)
 # 2. Check if fit context (ngrams)
