@@ -114,48 +114,54 @@ def check_if_replacable(word):
         return False
 
 
+# n - Proportion of words in a sentence to replace (rounded down)
+def pick_tokens_by_proportion(tokens, threshold = 0.3):
+    # Rank by frequency
+    freqToken = [None] * len(tokens)
+    for index, token in enumerate(tokens):
+        freqToken[index] = freq_dict.freq(token)
+    # print('freqToken = {}'.format(freqToken))
+    sortedtokens = [f for (t, f) in sorted(zip(freqToken, tokens))]
+    # print(sortedtokens)
+    return sortedtokens[:int(threshold * len(tokens))]
+
+
+
 def simplify(input):
     simplified = ''
-
     sents = sent_tokenize(input)  # Split by sentences
-
     final_word = {}
+
+    # Top N most frequent words we never replace
+    top_n = 3000
+    freq_top_n = sorted(freq_dict.values(), reverse=True)[top_n - 1]
+
+
     for sent in sents:
         tokens = word_tokenize(sent)    # Split a sentence by words
 
-        # Rank by frequency
-        freqToken = [None]*len(tokens)
-        for index, token in enumerate(tokens):
-            freqToken[index] = freq_dict.freq(token)
-        # print('freqToken = {}'.format(freqToken))
+        # difficult_words = pick_tokens_by_proportion(tokens, 0.3)
+        difficult_words = [t for t in tokens if freq_dict[t] < freq_top_n]
 
-        sortedtokens = [f for (t, f) in sorted(zip(freqToken, tokens))]
-        # print(sortedtokens)
-
-        n = int(0.3 * len(tokens))
-        # print('n = ' + str(n))
-
+        # print("Difficult words: ", difficult_words)
         # 1. Select difficult words
-        difficultWords = []
-        for i in range(0, n):
-            difficultWord = sortedtokens[i]
-            difficultWords.append(difficultWord)
+        for difficult_word in difficult_words:
             replacement_candidate = {}
 
             # 2. Generate candidates
-            for option in generate_word2vec_candidates(difficultWord):
+            for option in generate_word2vec_candidates(difficult_word):
                 replacement_candidate[option] = freq_dict.freq(option)
-            for option in generate_wordnet_candidates(difficultWord):
+            for option in generate_wordnet_candidates(difficult_word):
                 replacement_candidate[option] = freq_dict.freq(option)
 
             # 3. Select the candidate with the highest frequency
             if len(replacement_candidate) > 0:
-                final_word[difficultWord] = max(replacement_candidate, key=lambda i: replacement_candidate[i])
+                final_word[difficult_word] = max(replacement_candidate, key=lambda i: replacement_candidate[i])
 
         output = []
         for token_id in range(len(tokens)):
             token = tokens[token_id]
-            if token in difficultWords and token in final_word and token.istitle() is False:
+            if token in difficult_words and token in final_word and token.istitle() is False:
                 if token_id != 0 and token_id != len(tokens):
                     fw_in_tense = convert(final_word[token], token)
                     if check_if_word_fits_the_context(tokens[token_id-1:token_id+2], token, fw_in_tense):
@@ -170,7 +176,7 @@ def simplify(input):
         print('v1', ' '.join(output))
 
         for token in tokens:
-            if token in difficultWords and token in final_word and token.istitle() is False:  # Replace word if in is difficult and a candidate was found
+            if token in difficult_words and token in final_word and token.istitle() is False:  # Replace word if in is difficult and a candidate was found
                 fw_in_tense = convert(final_word[token], token)
                 # print('tense', final_word[token], token, fw_in_tense)
                 # output.append(final_word[token])
@@ -181,6 +187,7 @@ def simplify(input):
         simplified += ' '.join(output)
 
     return simplified
+
 
 if __name__ == '__main__':
     freq_dict = generate_freq_dict()
