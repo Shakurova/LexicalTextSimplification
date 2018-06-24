@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="b683ee83-b8a0-49d2-863e-70f2f23d04f1" name="Default" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/LexicalTextSimplification.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/LexicalTextSimplification.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+    <list default="true" id="b683ee83-b8a0-49d2-863e-70f2f23d04f1" name="Default" comment="top-N replacement">
+      <change afterPath="$PROJECT_DIR$/input.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/output.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/steps.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/conjugation.py" beforeDir="false" afterPath="$PROJECT_DIR$/conjugation.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/text_simplification.py" beforeDir="false" afterPath="$PROJECT_DIR$/text_simplification.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/text_simplification_lena.py" beforeDir="false" afterPath="$PROJECT_DIR$/text_simplification_lena.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -17,22 +18,10 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="text_simplification.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/text_simplification.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="375">
-              <caret line="43" column="25" selection-start-line="43" selection-end-line="44" />
-              <folding>
-                <element signature="e#175#188#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
       <file leaf-file-name="functions.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/functions.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="279">
+            <state relative-caret-position="645">
               <caret line="43" column="42" selection-start-line="43" selection-start-column="42" selection-end-line="43" selection-end-column="42" />
             </state>
           </provider>
@@ -47,23 +36,39 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="text_simplification_lena.py" pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/text_simplification_lena.py">
+      <file leaf-file-name="text_simplification.py" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/text_simplification.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="225">
-              <caret line="24" column="43" lean-forward="true" selection-start-line="24" selection-start-column="43" selection-end-line="24" selection-end-column="43" />
+            <state relative-caret-position="270">
+              <caret line="120" lean-forward="true" selection-start-line="120" selection-end-line="120" />
               <folding>
-                <element signature="e#175#190#0" expanded="true" />
+                <element signature="e#175#194#0" expanded="true" />
               </folding>
             </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="builtins.py" pinned="false" current-in-tab="false">
+        <entry file="file://$USER_HOME$/.PyCharmCE2018.1/system/python_stubs/-1247971763/builtins.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="2568">
+              <caret line="4862" column="8" selection-start-line="4862" selection-start-column="8" selection-end-line="4862" selection-end-column="8" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="steps.txt" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/steps.txt">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="-8750" />
           </provider>
         </entry>
       </file>
       <file leaf-file-name="conjugation.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/conjugation.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="330">
-              <caret line="22" column="54" lean-forward="true" selection-start-line="21" selection-start-column="36" selection-end-line="22" selection-end-column="54" />
+            <state relative-caret-position="300">
+              <caret line="25" column="54" selection-start-line="25" selection-start-column="54" selection-end-line="25" selection-end-column="54" />
               <folding>
                 <element signature="e#0#37#0" expanded="true" />
               </folding>
@@ -74,7 +79,7 @@
       <file leaf-file-name="ppdb_filter.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/paraphrasing/ppdb_filter.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="117">
+            <state relative-caret-position="1140">
               <caret line="79" selection-start-line="79" selection-end-line="79" />
               <folding>
                 <element signature="e#102#112#0" expanded="true" />
@@ -125,6 +130,7 @@
       <find>no need</find>
       <find>area_dict</find>
       <find>thanks for</find>
+      <find>istit</find>
     </findStrings>
     <replaceStrings>
       <replace>ngram_freq_dict</replace>
@@ -138,10 +144,10 @@
       <list>
         <option value="$PROJECT_DIR$/requirements.txt" />
         <option value="$PROJECT_DIR$/functions.py" />
-        <option value="$PROJECT_DIR$/text_simplification.py" />
         <option value="$PROJECT_DIR$/ppdb/ppdb_filter.py" />
         <option value="$PROJECT_DIR$/paraphrasing/ppdb_filter.py" />
         <option value="$PROJECT_DIR$/text_simplification_lena.py" />
+        <option value="$PROJECT_DIR$/text_simplification.py" />
       </list>
     </option>
   </component>
@@ -262,7 +268,7 @@
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/text_simplification_lena.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/text_simplification.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -315,31 +321,66 @@
       <option name="project" value="LOCAL" />
       <updated>1529762776613</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="Merge branches 'lena' and 'master' of https://github.com/Shakurova/LexicalTextSimplification&#10;&#10;# Conflicts:&#10;#&#9;text_simplification_lena.py">
+      <created>1529764462810</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1529764462810</updated>
+    </task>
+    <task id="LOCAL-00005" summary="Merge branches 'lena' and 'master' of https://github.com/Shakurova/LexicalTextSimplification&#10;&#10;# Conflicts:&#10;#&#9;text_simplification_lena.py">
+      <created>1529764478583</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1529764478583</updated>
+    </task>
+    <task id="LOCAL-00006" summary="delete old text_simplification.py">
+      <created>1529764530823</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1529764530823</updated>
+    </task>
+    <task id="LOCAL-00007" summary="rename to text_simplification.py">
+      <created>1529764551040</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1529764551040</updated>
+    </task>
+    <task id="LOCAL-00008" summary="top-N replacement">
+      <created>1529770032324</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1529770032324</updated>
+    </task>
+    <option name="localTasksCounter" value="9" />
     <servers />
   </component>
   <component name="ToolWindowManager">
     <frame x="67" y="25" width="1853" height="1055" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.24986508" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.24986508" />
       <window_info anchor="bottom" id="TODO" order="6" />
-      <window_info anchor="bottom" id="Messages" order="7" />
       <window_info anchor="bottom" id="Event Log" order="7" sideWeight="0.50026983" side_tool="true" weight="0.32910052" />
-      <window_info anchor="bottom" id="Find" order="1" weight="0.32910052" />
       <window_info anchor="bottom" id="Version Control" order="7" weight="0.1989418" />
       <window_info anchor="bottom" id="Python Console" order="7" />
-      <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.26560846" />
+      <window_info anchor="bottom" id="Run" order="2" weight="0.26560846" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info anchor="bottom" id="Terminal" order="7" sideWeight="0.49973017" weight="0.32910052" />
       <window_info id="Favorites" order="2" side_tool="true" />
-      <window_info anchor="bottom" id="Debug" order="3" weight="0.38624337" />
+      <window_info anchor="bottom" id="Debug" order="3" visible="true" weight="0.38624337" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
+      <window_info anchor="bottom" id="Find" order="1" weight="0.32910052" />
+      <window_info anchor="bottom" id="Messages" order="7" />
     </layout>
   </component>
   <component name="Vcs.Log.History.Properties">
@@ -359,7 +400,11 @@
     <MESSAGE value="indexing for context checking + merge with lena" />
     <MESSAGE value="requirements.txt" />
     <MESSAGE value="Merge remote-tracking branch 'remotes/origin/lena'&#10;&#10;# Conflicts:&#10;#&#9;text_simplification_lena.py" />
-    <option name="LAST_COMMIT_MESSAGE" value="Merge remote-tracking branch 'remotes/origin/lena'&#10;&#10;# Conflicts:&#10;#&#9;text_simplification_lena.py" />
+    <MESSAGE value="Merge branches 'lena' and 'master' of https://github.com/Shakurova/LexicalTextSimplification&#10;&#10;# Conflicts:&#10;#&#9;text_simplification_lena.py" />
+    <MESSAGE value="delete old text_simplification.py" />
+    <MESSAGE value="rename to text_simplification.py" />
+    <MESSAGE value="top-N replacement" />
+    <option name="LAST_COMMIT_MESSAGE" value="top-N replacement" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -370,65 +415,137 @@
           <option name="timeStamp" value="5" />
         </line-breakpoint>
       </breakpoints>
-      <option name="time" value="6" />
+      <default-breakpoints>
+        <breakpoint type="python-exception">
+          <properties notifyOnTerminate="true" exception="BaseException">
+            <option name="notifyOnTerminate" value="true" />
+          </properties>
+        </breakpoint>
+      </default-breakpoints>
+      <option name="time" value="11" />
     </breakpoint-manager>
   </component>
   <component name="debuggerHistoryManager">
     <expressions id="evaluateExpression">
       <expression>
-        <expression-string>trans</expression-string>
+        <expression-string>list(filter(lambda t: freq_dict[t] &lt; freq_top_n, tokens))</expression-string>
         <language-id>Python</language-id>
         <evaluation-mode>EXPRESSION</evaluation-mode>
       </expression>
       <expression>
-        <expression-string>ngrams.keys()</expression-string>
+        <expression-string>len(list(difficult_words))</expression-string>
         <language-id>Python</language-id>
         <evaluation-mode>EXPRESSION</evaluation-mode>
       </expression>
       <expression>
-        <expression-string>derivationally_related_forms[0][1][0].synset().name().split('.')</expression-string>
+        <expression-string>list(difficult_words)</expression-string>
         <language-id>Python</language-id>
         <evaluation-mode>EXPRESSION</evaluation-mode>
       </expression>
       <expression>
-        <expression-string>derivationally_related_forms[0][1][0].synset().name().split</expression-string>
+        <expression-string>len(difficult_words)</expression-string>
         <language-id>Python</language-id>
         <evaluation-mode>EXPRESSION</evaluation-mode>
       </expression>
       <expression>
-        <expression-string>derivationally_related_forms[0][1][0].synset().name.split</expression-string>
+        <expression-string>sorted(freq_dict, key=lambda k: freq_dict[k], reverse=True)[5000:5050]</expression-string>
         <language-id>Python</language-id>
         <evaluation-mode>EXPRESSION</evaluation-mode>
       </expression>
       <expression>
-        <expression-string>derivationally_related_forms[0][1][0].synset().name</expression-string>
+        <expression-string>sorted(freq_dict, key=lambda k: freq_dict[k], reverse=True)[10000:10050]</expression-string>
         <language-id>Python</language-id>
         <evaluation-mode>EXPRESSION</evaluation-mode>
       </expression>
       <expression>
-        <expression-string>derivationally_related_forms[0][1][0].synset()</expression-string>
+        <expression-string>sorted(freq_dict, key=lambda k: freq_dict[k], reverse=True)[10000]</expression-string>
         <language-id>Python</language-id>
         <evaluation-mode>EXPRESSION</evaluation-mode>
       </expression>
       <expression>
-        <expression-string>derivationally_related_forms[0][1][0].synset</expression-string>
+        <expression-string>sorted(freq_dict, key=lambda k: freq_dict[k], reverse=True)</expression-string>
         <language-id>Python</language-id>
         <evaluation-mode>EXPRESSION</evaluation-mode>
       </expression>
       <expression>
-        <expression-string>derivationally_related_forms[0][1][0]</expression-string>
+        <expression-string>sorted(freq_dict, key=lambda k: freq_dict[k])</expression-string>
         <language-id>Python</language-id>
         <evaluation-mode>EXPRESSION</evaluation-mode>
       </expression>
     </expressions>
   </component>
   <component name="editorHistoryManager">
+    <entry file="file://$PROJECT_DIR$/functions.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="645">
+          <caret line="43" column="42" selection-start-line="43" selection-start-column="42" selection-end-line="43" selection-end-column="42" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/ngrams.csv">
+      <provider selected="true" editor-type-id="LargeFileEditor">
+        <state relative-caret-position="55785">
+          <caret line="3719" column="41" selection-start-line="3719" selection-start-column="41" selection-end-line="3719" selection-end-column="41" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/conjugation.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="255">
+          <caret line="22" column="54" lean-forward="true" selection-start-line="21" selection-start-column="36" selection-end-line="22" selection-end-column="54" />
+          <folding>
+            <element signature="e#0#37#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/paraphrasing/ppdb_filter.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1140">
+          <caret line="79" selection-start-line="79" selection-end-line="79" />
+          <folding>
+            <element signature="e#102#112#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar:///usr/local/lib/python3.6/dist-packages/ppdb-0.1.0-py3.6.egg!/ppdb/ppdb.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="3870">
+          <caret line="258" column="13" selection-start-line="258" selection-start-column="4" selection-end-line="258" selection-end-column="13" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/.local/lib/python3.6/site-packages/nltk/tokenize/__init__.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1410">
+          <caret line="112" column="4" selection-start-line="112" selection-start-column="4" selection-end-line="112" selection-end-column="4" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/requirements.txt">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="45">
+          <caret line="3" column="6" selection-start-line="3" selection-start-column="6" selection-end-line="3" selection-end-column="6" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/text_simplification.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1950">
+          <caret line="146" column="35" lean-forward="true" selection-start-line="146" selection-start-column="35" selection-end-line="146" selection-end-column="35" />
+          <folding>
+            <element signature="e#175#194#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/text_simplification.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="1050">
           <caret line="79" column="40" lean-forward="true" selection-start-line="79" selection-start-column="40" selection-end-line="79" selection-end-column="40" />
           <folding>
-            <element signature="e#175#188#0" expanded="true" />
+            <element signature="e#175#194#0" expanded="true" />
           </folding>
         </state>
       </provider>
@@ -461,12 +578,12 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/text_simplification_lena.py">
+    <entry file="file://$PROJECT_DIR$/text_simplification.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="1695">
           <caret line="129" selection-start-line="129" selection-end-line="129" />
           <folding>
-            <element signature="e#175#190#0" expanded="true" />
+            <element signature="e#175#194#0" expanded="true" />
           </folding>
         </state>
       </provider>
@@ -476,7 +593,7 @@
         <state relative-caret-position="870">
           <caret line="67" column="45" selection-start-line="67" selection-start-column="45" selection-end-line="67" selection-end-column="45" />
           <folding>
-            <element signature="e#175#188#0" expanded="true" />
+            <element signature="e#175#194#0" expanded="true" />
           </folding>
         </state>
       </provider>
@@ -495,12 +612,12 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/text_simplification_lena.py">
+    <entry file="file://$PROJECT_DIR$/text_simplification.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="105">
           <caret line="7" column="13" selection-start-line="7" selection-start-column="7" selection-end-line="7" selection-end-column="13" />
           <folding>
-            <element signature="e#175#190#0" expanded="true" />
+            <element signature="e#175#194#0" expanded="true" />
           </folding>
         </state>
       </provider>
@@ -510,7 +627,7 @@
         <state relative-caret-position="870">
           <caret line="67" column="45" lean-forward="true" selection-start-line="67" selection-start-column="45" selection-end-line="67" selection-end-column="45" />
           <folding>
-            <element signature="e#175#188#0" expanded="true" />
+            <element signature="e#175#194#0" expanded="true" />
           </folding>
         </state>
       </provider>
@@ -540,20 +657,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/ngrams.csv">
-      <provider selected="true" editor-type-id="LargeFileEditor">
-        <state relative-caret-position="55785">
-          <caret line="3719" column="41" selection-start-line="3719" selection-start-column="41" selection-end-line="3719" selection-end-column="41" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/functions.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="279">
-          <caret line="43" column="42" selection-start-line="43" selection-start-column="42" selection-end-line="43" selection-end-column="42" />
-        </state>
-      </provider>
-    </entry>
     <entry file="jar:///usr/local/lib/python3.6/dist-packages/ppdb-0.1.0-py3.6.egg!/ppdb/ppdb.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="3870">
@@ -570,7 +673,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/paraphrasing/ppdb_filter.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="117">
+        <state relative-caret-position="1140">
           <caret line="79" selection-start-line="79" selection-end-line="79" />
           <folding>
             <element signature="e#102#112#0" expanded="true" />
@@ -580,8 +683,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/conjugation.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="330">
-          <caret line="22" column="54" lean-forward="true" selection-start-line="21" selection-start-column="36" selection-end-line="22" selection-end-column="54" />
+        <state relative-caret-position="300">
+          <caret line="25" column="54" selection-start-line="25" selection-start-column="54" selection-end-line="25" selection-end-column="54" />
           <folding>
             <element signature="e#0#37#0" expanded="true" />
           </folding>
@@ -590,20 +693,58 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/text_simplification.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="375">
-          <caret line="43" column="25" selection-start-line="43" selection-end-line="44" />
+        <state relative-caret-position="510">
+          <caret line="43" column="20" lean-forward="true" selection-end-line="218" />
           <folding>
-            <element signature="e#175#188#0" expanded="true" />
+            <element signature="e#175#194#0" expanded="true" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/functions.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="645">
+          <caret line="43" column="42" selection-start-line="43" selection-start-column="42" selection-end-line="43" selection-end-column="42" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/.local/lib/python3.6/site-packages/nltk/probability.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="221">
+          <caret line="91" column="8" selection-start-line="91" selection-start-column="8" selection-end-line="91" selection-end-column="8" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/ngrams.csv">
+      <provider selected="true" editor-type-id="LargeFileEditor">
+        <state relative-caret-position="55785">
+          <caret line="3719" column="41" selection-start-line="3719" selection-start-column="41" selection-end-line="3719" selection-end-column="41" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/text_simplification_lena.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="225">
-          <caret line="24" column="43" lean-forward="true" selection-start-line="24" selection-start-column="43" selection-end-line="24" selection-end-column="43" />
+        <state relative-caret-position="-2222" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/steps.txt">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-8750" />
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/.PyCharmCE2018.1/system/python_stubs/-1247971763/builtins.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="2568">
+          <caret line="4862" column="8" selection-start-line="4862" selection-start-column="8" selection-end-line="4862" selection-end-column="8" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/text_simplification.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="270">
+          <caret line="120" lean-forward="true" selection-start-line="120" selection-end-line="120" />
           <folding>
-            <element signature="e#175#190#0" expanded="true" />
+            <element signature="e#175#194#0" expanded="true" />
           </folding>
         </state>
       </provider>

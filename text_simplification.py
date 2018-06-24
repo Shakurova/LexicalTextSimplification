@@ -2,37 +2,27 @@
 Choose 30% top low frequent words in the sentence,
 replace them with the most frequent candidate from wordnet """
 
-import operator
-from operator import itemgetter
-import re
 import pandas as pd
-
-import ujson
+import gensim
 
 from nltk.corpus import brown
 from nltk.probability import *
 from nltk.corpus import wordnet
 from nltk import sent_tokenize, word_tokenize, pos_tag
-from nltk import sent_tokenize, word_tokenize
-import gensim
-import _pickle as pickle
 
 import logging
 from conjugation import convert
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
-# Load Google's pre-trained Word2Vec model.
+# Load Google's pre-trained Word2Vec model
 model = gensim.models.KeyedVectors.load_word2vec_format('./model/GoogleNews-vectors-negative300-SLIM.bin', binary=True)
-from nltk import sent_tokenize, word_tokenize, pos_tag
 
-input = 'These theorists were sometimes only loosely affiliated, and some authors point out that the "Frankfurt circle" was neither a philosophical school nor a political group. Nevertheless, they spoke with a common paradigm in mind; they shared the Marxist Hegelian premises and were preoccupied with similar questions.'
-# input = 'Her face was a synthesis of perfect symmetry and unusual proportion; he could have gazed at it for hours, trying to locate the source of its fascination.'
-
-# Load ngrams frequenct dictionary
+# Load ngrams frequency dictionary
 ngrams = pd.read_csv('ngrams.csv')
 ngrams = ngrams.drop_duplicates(subset='bigram', keep='first')
-ngram_freq_dict = dict(zip(ngrams.bigram, ngrams.freq))
+
+steps = open('steps.txt', 'w')
 
 
 def generate_freq_dict():
@@ -44,182 +34,186 @@ def generate_freq_dict():
     return freq_dict
 
 
-def check_length(word):
-    """ Return word length. """
-    return len(word)
+class Simplifier:
+    def __init__(self):
+        self.ngram_freq_dict = dict(zip(ngrams.bigram, ngrams.freq))
+        self.freq_dict = generate_freq_dict()
 
+    def check_if_word_fits_the_context(self, context, token, replacement):
+        """ Check if bigram with the replacement exists. """
+        # Todo: combine in a single condition
+        if (context[0] + ' ' + replacement).lower() in self.ngram_freq_dict.keys():
+            return True
+        if (replacement + ' ' + context[2]).lower() in self.ngram_freq_dict.keys():
+            return True
+        else:
+            return False
 
-def check_frequency(word):
-    """ Return word frequency. """
-    return freq_dict[word]
+    def return_bigram_score(self, context, token, replacement):
+        """ Return ad averaged frequency of left- and right-context bigram. """
+        # Todo: incorporate word2vec value
+        score = 0
+        if (context[0] + ' ' + replacement).lower() in self.ngram_freq_dict.keys():
+            score += self.ngram_freq_dict[(context[0] + ' ' + replacement).lower()]
+        if (replacement + ' ' + context[2]).lower() in self.ngram_freq_dict.keys():
+            score += self.ngram_freq_dict[(replacement + ' ' + context[2]).lower()]
+        return score / 2
 
+    def generate_word2vec_candidates(self, word, topn=15):
+        """ Return top words from word2vec for each word in input. """
+        candidates = set()
+        if self.check_if_replacable(word) and word in model:
+            candidates = [convert(option[0].lower(), word) for option in model.most_similar(word, topn=topn)
+                          if convert(option[0].lower(), word) != word and convert(option[0].lower(), word) != None]
 
-def return_synonyms(word):
-    """ Return synonyms from wordnet. """
-    replacement_candidate = []
-    for synset in wordnet.synsets(word):
-        for lemma in synset.lemmas():
-            replacement_candidate.append(lemma.name())
-    return replacement_candidate
+        return candidates
 
+    def generate_wordnet_candidates(self, word):
+        """ Generate wordnet candidates for each word in input. """
+        candidates = set()
+        if self.check_if_replacable(word):
+            for synset in wordnet.synsets(word):
+                for lemma in synset.lemmas():
+                    if convert(lemma.name().lower(), word) != word and convert(lemma.name().lower(), word) != None:
+                        candidates.add(convert(lemma.name().lower(), word))
 
+        return candidates
 
+    def check_if_replacable(self, word):
+        """ Check POS, we only want to replace nouns, adjectives and verbs. """
+        word_tag = pos_tag([word])
+        if 'NN' in word_tag[0][1] or 'JJ' in word_tag[0][1] or 'VB' in word_tag[0][1]:
+            return True
+        else:
+            return False
 
-def check_if_word_fits_the_context(context, token, replacement):
-    """ Check if bigram with the replacement exists. """
-    # Todo: combine in a single condition
-    if (context[0] + ' ' + replacement).lower() in ngram_freq_dict.keys():
-        print('replacement', context[0] + ' ' + replacement, ngram_freq_dict[(context[0] + ' ' + replacement).lower()])
-        return True
-    elif (replacement + ' ' + context[2]).lower() in ngram_freq_dict.keys():
-        print('replacement', replacement + ' ' + context[2], ngram_freq_dict[replacement + ' ' + context[2]])
-        return True
-    else:
-        return False
+    def pick_tokens_by_proportion(self, tokens, threshold=0.3):
+        """ N - Proportion of words in a sentence to replace (rounded down). """
+        # Rank by frequency
+        freqToken = [None] * len(tokens)
+        for index, token in enumerate(tokens):
+            freqToken[index] = self.freq_dict.freq(token)
+        # print('freqToken = {}'.format(freqToken))
+        sortedtokens = [f for (t, f) in sorted(zip(freqToken, tokens))]
+        # print(sortedtokens)
 
+        return sortedtokens[:int(threshold * len(tokens))]
 
-def generate_word2vec_candidates(word, topn=15):
-    """ Return top words from word2vec for each word in input. """
-    candidates = set()
-    # print(word)
-    if check_if_replacable(word) and word in model:
-        # print(word[0])
-        # print(model.most_similar(word[0], topn=topn))
-        candidates = [word[0] for word in model.most_similar(word, topn=topn)]
+    def simplify(self, input):
+        simplified0 = ''
+        simplified1 = ''
+        simplified2 = ''
 
-    return candidates
+        sents = sent_tokenize(input)  # Split by sentences
 
+        # Top N most frequent words we never replace
+        # top_n = 3000
+        # freq_top_n = sorted(self.freq_dict.values(), reverse=True)[top_n - 1]
 
-def generate_wordnet_candidates(word):
-    """ Generate wordnet candidates for each word in input. """
-    candidates = set()
-    if check_if_replacable(word):
-        for synset in wordnet.synsets(word):
-            for lemma in synset.lemmas():
-                candidates.add(lemma.name())
-            # for lemma in synset.lemmas():
-            #     candidates[lemma.name()] = freq_dict.freq(lemma.name())
+        for sent in sents:
+            steps.write(sent + '\n')
+            tokens = word_tokenize(sent)  # Split a sentence by words
 
-    return candidates
+            # Find difficult words - long and unfrequent
+            # difficultWords = [t for t in tokens if self.freq_dict[t] < freq_top_n]
 
+            # 1. Find difficult words
+            freqToken = [None] * len(tokens)
+            for index, token in enumerate(tokens):
+                freqToken[index] = self.freq_dict.freq(token)
+            sortedtokens = [f for (t, f) in sorted(zip(freqToken, tokens))]
+            difficultWords = [sortedtokens[i] for i in range(0, int(0.3 * len(tokens)))]  # take top 30% of unfrequent words
+            steps.write('difficultWords:' + str(difficultWords) + '\n')
 
-def check_if_replacable(word):
-    """ Check POS and frequency; """
-    word_tag = pos_tag([word])
-    # print(word, word.istitle())
-    if 'NN' in word_tag[0][1] or 'JJ' in word_tag[0][1] or 'VB' in word_tag[0][1]:
-        # print('replacable', word_tag)
-        return True
-    else:
-        return False
+            all_options = {}
+            for difficultWord in difficultWords:
+                replacement_candidate = {}
 
+                # 2. Generate candidates
+                for option in self.generate_word2vec_candidates(difficultWord):
+                    replacement_candidate[option] = self.freq_dict.freq(option)
+                for option in self.generate_wordnet_candidates(difficultWord):
+                    replacement_candidate[option] = self.freq_dict.freq(option)
 
-# n - Proportion of words in a sentence to replace (rounded down)
-def pick_tokens_by_proportion(tokens, threshold = 0.3):
-    # Rank by frequency
-    freqToken = [None] * len(tokens)
-    for index, token in enumerate(tokens):
-        freqToken[index] = freq_dict.freq(token)
-    # print('freqToken = {}'.format(freqToken))
-    sortedtokens = [f for (t, f) in sorted(zip(freqToken, tokens))]
-    # print(sortedtokens)
-    return sortedtokens[:int(threshold * len(tokens))]
+                # 2.1. Replacement options with frequency
+                all_options[difficultWord] = replacement_candidate
+            steps.write('all_options:' + str(all_options) + '\n')
 
+            # 2.2. Replacement options with bigram score
+            best_candidates = {}
+            for token_id in range(len(tokens)):
+                token = tokens[token_id]
+                best_candidates[token] = {}
+                if token in all_options:
+                    for opt in all_options[token]:
+                        if token_id != 0 and token_id != len(tokens):  # if not the first or the last word in the sentence
+                            if self.check_if_word_fits_the_context(tokens[token_id - 1:token_id + 2], token, opt):
+                                # Return all candidates with its bigram scores
+                                best_candidates[token][opt] = self.return_bigram_score(tokens[token_id - 1:token_id + 2], token, opt)
+            steps.write('best_candidates:' + str(best_candidates) + '\n')
 
-
-def simplify(input):
-    simplified = ''
-    sents = sent_tokenize(input)  # Split by sentences
-    final_word = {}
-
-    # Top N most frequent words we never replace
-    top_n = 3000
-    freq_top_n = sorted(freq_dict.values(), reverse=True)[top_n - 1]
-
-
-    for sent in sents:
-        tokens = word_tokenize(sent)    # Split a sentence by words
-
-        # difficult_words = pick_tokens_by_proportion(tokens, 0.3)
-        difficult_words = [t for t in tokens if freq_dict[t] < freq_top_n]
-
-        # print("Difficult words: ", difficult_words)
-        # 1. Select difficult words
-        for difficult_word in difficult_words:
-            replacement_candidate = {}
-
-            # 2. Generate candidates
-            for option in generate_word2vec_candidates(difficult_word):
-                replacement_candidate[option] = freq_dict.freq(option)
-            for option in generate_wordnet_candidates(difficult_word):
-                replacement_candidate[option] = freq_dict.freq(option)
-
-            # 3. Select the candidate with the highest frequency
-            if len(replacement_candidate) > 0:
-                final_word[difficult_word] = max(replacement_candidate, key=lambda i: replacement_candidate[i])
-
-        output = []
-        for token_id in range(len(tokens)):
-            token = tokens[token_id]
-            if token in difficult_words and token in final_word and token.istitle() is False:
-                if token_id != 0 and token_id != len(tokens):
-                    fw_in_tense = convert(final_word[token], token)
-                    if check_if_word_fits_the_context(tokens[token_id-1:token_id+2], token, fw_in_tense):
-                        # output.append(final_word[token])
-                        output.append(fw_in_tense)
+            # 3. Generate replacements0 - take the word with the highest bigram score
+            output = []
+            for token in tokens:
+                if token in best_candidates:
+                    if token.istitle() is False and best_candidates[token] != {}:
+                        # Choose the one with the highest bigram score
+                        best = max(best_candidates[token], key=lambda i: best_candidates[token][i])
+                        steps.write('best v1:' + str(token) + ' -> ' + str(best) + '\n')
+                        output.append(best)
                     else:
                         output.append(token)
                 else:
                     output.append(token)
-            else:
-                output.append(token)
-        print('v1', ' '.join(output))
+            print('v0', ' '.join(output))
+            simplified0 += ' '.join(output)
 
-        for token in tokens:
-            if token in difficult_words and token in final_word and token.istitle() is False:  # Replace word if in is difficult and a candidate was found
-                fw_in_tense = convert(final_word[token], token)
-                # print('tense', final_word[token], token, fw_in_tense)
-                # output.append(final_word[token])
-                output.append(fw_in_tense)
-            else:
-                output.append(token)
-        print('v2', ' '.join(output))
-        simplified += ' '.join(output)
+            # 3. Generate replacements1 - take the word with the highest frequency + check the context
+            output = []
+            for token_id in range(len(tokens)):
+                token = tokens[token_id]
+                if token in all_options and len(all_options[token]) > 0 and token in difficultWords and token.istitle() is False:
+                    if token_id != 0 and token_id != len(tokens):
+                        # Choose most frequent
+                        best = max(all_options[token], key=lambda i: all_options[token][i])
+                        steps.write('best v2:' + str(token) + ' -> ' + str(best) + '\n')
+                        if self.check_if_word_fits_the_context(tokens[token_id - 1:token_id + 2], token, best):
+                            output.append(best)
+                        else:
+                            output.append(token)
+                    else:
+                        output.append(token)
+                else:
+                    output.append(token)
+            print('v1', ' '.join(output))
+            simplified1 += ' '.join(output)
 
-    return simplified
+            # 3. Generate replacements2  - take the word with the highest frequency
+            output = []
+            for token in tokens:
+                # Replace word if in is difficult and a candidate was found
+                if token in all_options and len(all_options[token]) > 0 and token in difficultWords and token.istitle() is False:
+                    best = max(all_options[token], key=lambda i: all_options[token][i])
+                    steps.write('best v3:' + str(token) + ' -> ' + str(best) + '\n')
+                    output.append(best)
+                else:
+                    output.append(token)
+            print('v2', ' '.join(output))
+            simplified2 += ' '.join(output)
+
+        return simplified0, simplified1, simplified2
 
 
 if __name__ == '__main__':
-    freq_dict = generate_freq_dict()
+    simplifier = Simplifier()
 
-    # Generate ppdb candidates:
-    # Using lexical thing
+    with open('input.txt') as f:
+        with open('output.csv', 'w') as w:
+            for input in f:
+                simplified0, simplified1, simplified2 = simplifier.simplify(input)
+                print('Original', input)
+                w.write(simplified0 + '\t' + simplified1 + '\t' + simplified2 + '\n')
 
-    # Choose suitable word:
-    # Should be of the same part of speech
-    # Should be more frequent that the original word (first do lemmatisation and then check frequency)
-
-    print(simplify(input))
-    print(input)
-
-# Todo:
-# choose complex word (long and not frequent)
-# choose candidates - from dictionary of synonyms abd top word2vec words - check for gender, tense
-# choose suitable - those who occur in ngram dictionary
-
-# Am I using ppdb?
-
-# a lot of functions from here
-# https://github.com/SIMPATICOProject/SimpaticoTAEServer/blob/master/lexical_simplification_server/lib.py
-
-# 1. ComplexWordIdentifier
-# 2. Generator (generate suitable candidates)
-# 3. Ranker
-
-# Word2vec, synonyms, ppdb
-
-# Use ngrams to check the context
-
-# Today:
-# 1. Word2vec suggestions - only for nouns, verbs and adjectives (everything that starts with NN, VB, JJ and istitle == False)
-# 2. Check if fit context (ngrams)
+# 1. Choose difficult words (long and not frequent)
+# 2. Generate candidates - from dictionary of synonyms abd top word2vec words - check for gender, tense
+# 3. Choose the best candidate - check the context and frequency
