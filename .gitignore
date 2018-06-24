@@ -2,6 +2,7 @@
 ./data/*
 /data/
 /model/
+/.idea/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
