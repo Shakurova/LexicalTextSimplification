@@ -49,7 +49,7 @@ class Simplifier:
         else:
             return False
 
-    def return_bigram_score(self, context, token, replacement):
+    def return_bigram_score(self, context, replacement):
         """ Return ad averaged frequency of left- and right-context bigram. """
         # Todo: incorporate word2vec value
         score = 0
@@ -88,16 +88,13 @@ class Simplifier:
             return False
 
     def pick_tokens_by_proportion(self, tokens, threshold=0.3):
-        """ N - Proportion of words in a sentence to replace (rounded down). """
+        """ threshold - Proportion of words in a sentence to replace (rounded down). """
         # Rank by frequency
         freqToken = [None] * len(tokens)
         for index, token in enumerate(tokens):
             freqToken[index] = self.freq_dict.freq(token)
-        # print('freqToken = {}'.format(freqToken))
         sortedtokens = [f for (t, f) in sorted(zip(freqToken, tokens))]
-        # print(sortedtokens)
-
-        return sortedtokens[:int(threshold * len(tokens))]
+        return sortedtokens[:int(0.3 * len(tokens))] # take top 30% of unfrequent words
 
     def simplify(self, input):
         simplified0 = ''
@@ -114,15 +111,12 @@ class Simplifier:
             steps.write(sent + '\n')
             tokens = word_tokenize(sent)  # Split a sentence by words
 
-            # Find difficult words - long and unfrequent
+            # Replace only words that are not in the top_n most frequent in the dictionary
             # difficultWords = [t for t in tokens if self.freq_dict[t] < freq_top_n]
 
             # 1. Find difficult words
-            freqToken = [None] * len(tokens)
-            for index, token in enumerate(tokens):
-                freqToken[index] = self.freq_dict.freq(token)
-            sortedtokens = [f for (t, f) in sorted(zip(freqToken, tokens))]
-            difficultWords = [sortedtokens[i] for i in range(0, int(0.3 * len(tokens)))]  # take top 30% of unfrequent words
+            difficultWords = self.pick_tokens_by_proportion(tokens, 0.3)
+
             steps.write('difficultWords:' + str(difficultWords) + '\n')
 
             all_options = {}
@@ -208,7 +202,7 @@ if __name__ == '__main__':
     simplifier = Simplifier()
 
     with open('input.txt') as f:
-        with open('output.csv', 'w') as w:
+        with open('output2.csv', 'w') as w:
             for input in f:
                 simplified0, simplified1, simplified2 = simplifier.simplify(input)
                 print('Original', input)
