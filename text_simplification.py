@@ -70,12 +70,15 @@ class Simplifier:
         """ Return top words from word2vec for each word in input. """
         candidates = set()
         if self.check_if_replacable(word) and word in self.word2vec_model:
-            candidates = [convert(option[0].lower(), word) for option in self.word2vec_model.most_similar(word, topn=topn)
-                          if convert(option[0].lower(), word) != word and convert(option[0].lower(), word) != None]
-            # Print
+            candidates = []
             for option in self.word2vec_model.most_similar(word, topn=topn):
-                if convert(option[0].lower(), word) != word and convert(option[0].lower(), word) != None and option[0].lower() != convert(option[0].lower(), word):
-                    print(option[0].lower() + ' -> ' + word.lower() + ' = ' + convert(option[0].lower(), word))
+                converted = convert(option[0].lower(), word)
+                if converted != word and converted != None:
+                    candidates.append(converted)
+            # Print
+            # for option in self.word2vec_model.most_similar(word, topn=topn):
+            #     if converted != word and converted != None and option[0].lower() != converted:
+            #          print(option[0].lower() + ' -> ' + word.lower() + ' = ' + converted)
 
         return candidates
 
@@ -85,11 +88,12 @@ class Simplifier:
         if self.check_if_replacable(word):
             for synset in wordnet.synsets(word):
                 for lemma in synset.lemmas():
-                    if convert(lemma.name().lower(), word) != word and convert(lemma.name().lower(), word) != None:
-                        candidates.add(convert(lemma.name().lower(), word))
+                    converted = convert(lemma.name().lower(), word)
+                    if converted != word and converted != None:
+                        candidates.add(converted)
                         # Print
-                        if lemma.name().lower() != convert(lemma.name().lower(), word):
-                            print(lemma.name().lower() + ' -> ' + word.lower() + ' = ' + convert(lemma.name().lower(), word))
+                        # if lemma.name().lower() != converted:
+                        #     print(lemma.name().lower() + ' -> ' + word.lower() + ' = ' + converted)
 
         return candidates
 
@@ -110,9 +114,9 @@ class Simplifier:
         freqToken = [None] * len(tokens)
         for index, token in enumerate(tokens):
             freqToken[index] = self.freq_dict.freq(token)
-        # print('freqToken = {}'.format(freqToken))
+        # # print('freqToken = {}'.format(freqToken))
         sortedtokens = [f for (t, f) in sorted(zip(freqToken, tokens))]
-        # print(sortedtokens)
+        # # print(sortedtokens)
 
         return sortedtokens[:int(threshold * len(tokens))]
 
@@ -184,7 +188,7 @@ class Simplifier:
                         output.append(token)
                 else:
                     output.append(token)
-            print('v0', ' '.join(output))
+            # print('v0', ' '.join(output))
             simplified0 += ' '.join(output)
 
             # 3. Generate replacements1 - take the word with the highest frequency + check the context
@@ -205,7 +209,7 @@ class Simplifier:
                         output.append(token)
                 else:
                     output.append(token)
-            print('v1', ' '.join(output))
+            # print('v1', ' '.join(output))
             simplified1 += ' '.join(output)
 
             # 3. Generate replacements2  - take the word with the highest frequency
@@ -218,7 +222,7 @@ class Simplifier:
                     output.append(best)
                 else:
                     output.append(token)
-            print('v2', ' '.join(output))
+            # print('v2', ' '.join(output))
             simplified2 += ' '.join(output)
 
         return simplified0, simplified1, simplified2
@@ -231,7 +235,7 @@ if __name__ == '__main__':
         with open('wiki_output_zepp.csv', 'w') as w:
             for input in f:
                 simplified0, simplified1, simplified2 = simplifier.simplify(input)
-                print('Original', input)
+                # print('Original', input)
                 w.write(simplified0 + '\t' + simplified1 + '\t' + simplified2 + '\n')
 
 # 1. Choose difficult words (long and not frequent)
