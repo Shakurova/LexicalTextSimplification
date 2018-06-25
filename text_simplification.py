@@ -11,18 +11,11 @@ from nltk.corpus import wordnet
 from nltk import sent_tokenize, word_tokenize, pos_tag
 
 import logging
+
+import main_ppdb
 from conjugation import convert
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
-
-# Load Google's pre-trained Word2Vec model
-model = gensim.models.KeyedVectors.load_word2vec_format('./model/GoogleNews-vectors-negative300-SLIM.bin', binary=True)
-
-# Load ngrams frequency dictionary
-ngrams = pd.read_csv('ngrams.csv')
-ngrams = ngrams.drop_duplicates(subset='bigram', keep='first')
-
-steps = open('steps.txt', 'w')
 
 
 def generate_freq_dict():
@@ -36,8 +29,19 @@ def generate_freq_dict():
 
 class Simplifier:
     def __init__(self):
+        # Load ngrams frequency dictionary
+        ngrams = pd.read_csv('ngrams.csv')
+        ngrams = ngrams.drop_duplicates(subset='bigram', keep='first')
+
         self.ngram_freq_dict = dict(zip(ngrams.bigram, ngrams.freq))
         self.freq_dict = generate_freq_dict()
+
+        # Load Google's pre-trained Word2Vec model
+        self.word2vec_model = gensim.models.KeyedVectors.load_word2vec_format('./model/GoogleNews-vectors-negative300-SLIM.bin',
+                                                                              binary=True)
+        self.steps = open('steps_final.txt', 'w')
+        self.ppdb_rules = main_ppdb.load_ppdb('./data/ppdb-2.0-xxl-lexical')
+        
 
     def check_if_word_fits_the_context(self, context, token, replacement):
         """ Check if bigram with the replacement exists. """
@@ -65,13 +69,16 @@ class Simplifier:
     def generate_word2vec_candidates(self, word, topn=15):
         """ Return top words from word2vec for each word in input. """
         candidates = set()
-        if self.check_if_replacable(word) and word in model:
-            candidates = [convert(option[0].lower(), word) for option in model.most_similar(word, topn=topn)
-                          if convert(option[0].lower(), word) != word and convert(option[0].lower(), word) != None]
+        if self.check_if_replacable(word) and word in self.word2vec_model:
+            candidates = []
+            for option in self.word2vec_model.most_similar(word, topn=topn):
+                converted = convert(option[0].lower(), word)
+                if converted != word and converted != None:
+                    candidates.append(converted)
             # Print
-            for option in model.most_similar(word, topn=topn):
-                if convert(option[0].lower(), word) != word and convert(option[0].lower(), word) != None and option[0].lower() != convert(option[0].lower(), word):
-                    print(option[0].lower() + ' -> ' + word.lower() + ' = ' + convert(option[0].lower(), word))
+            # for option in self.word2vec_model.most_similar(word, topn=topn):
+            #     if converted != word and converted != None and option[0].lower() != converted:
+            #          print(option[0].lower() + ' -> ' + word.lower() + ' = ' + converted)
 
         return candidates
 
@@ -81,22 +88,31 @@ class Simplifier:
         if self.check_if_replacable(word):
             for synset in wordnet.synsets(word):
                 for lemma in synset.lemmas():
-                    if convert(lemma.name().lower(), word) != word and convert(lemma.name().lower(), word) != None:
-                        candidates.add(convert(lemma.name().lower(), word))
+                    converted = convert(lemma.name().lower(), word)
+                    if converted != word and converted != None:
+                        candidates.add(converted)
                         # Print
-                        if lemma.name().lower() != convert(lemma.name().lower(), word):
-                            print(lemma.name().lower() + ' -> ' + word.lower() + ' = ' + convert(lemma.name().lower(), word))
+                        # if lemma.name().lower() != converted:
+                        #     print(lemma.name().lower() + ' -> ' + word.lower() + ' = ' + converted)
 
         return candidates
 
-    def generate_ppdf_candidates(self, word):
-        # Todo: return all ppdf candidates form the dictionary
-        return True
+    def generate_ppdb_candidates(self, word):
+        return self.ppdb_rules[word] if word in self.ppdb_rules else []
 
     def check_if_replacable(self, word):
         """ Check POS, we only want to replace nouns, adjectives and verbs. """
         word_tag = pos_tag([word])
         if 'NN' in word_tag[0][1] or 'JJ' in word_tag[0][1] or 'VB' in word_tag[0][1]:
+            return True
+        else:
+            return False
+
+    def check_pos_tags(self, sent, token_id, replacement):
+        old_tag = pos_tag(sent)[token_id][1]
+        sent[token_id] = replacement
+        new_tag = pos_tag(sent)[0][1]
+        if new_tag == old_tag:
             return True
         else:
             return False
@@ -107,9 +123,9 @@ class Simplifier:
         freqToken = [None] * len(tokens)
         for index, token in enumerate(tokens):
             freqToken[index] = self.freq_dict.freq(token)
-        # print('freqToken = {}'.format(freqToken))
+        # # print('freqToken = {}'.format(freqToken))
         sortedtokens = [f for (t, f) in sorted(zip(freqToken, tokens))]
-        # print(sortedtokens)
+        # # print(sortedtokens)
 
         return sortedtokens[:int(threshold * len(tokens))]
 
@@ -117,6 +133,11 @@ class Simplifier:
         simplified0 = ''
         simplified1 = ''
         simplified2 = ''
+        simplified3 = ''
+        simplified4 = ''
+        simplified5 = ''
+        simplified6 = ''
+        simplified7 = ''
 
         sents = sent_tokenize(input)  # Split by sentences
 
@@ -125,10 +146,11 @@ class Simplifier:
         freq_top_n = sorted(self.freq_dict.values(), reverse=True)[top_n - 1]
 
         for sent in sents:
-            steps.write(sent + '\n')
+            self.steps.write(sent + '\n')
             tokens = word_tokenize(sent)  # Split a sentence by words
+            # tags = pos_tag(tokens)
 
-            # Find difficult words - long and unfrequent
+            # Find difficult words - long and infrequent
             difficultWords = [t for t in tokens if self.freq_dict[t] < freq_top_n]
 
             # 1. Find difficult words
@@ -136,8 +158,8 @@ class Simplifier:
             # for index, token in enumerate(tokens):
             #     freqToken[index] = self.freq_dict.freq(token)
             # sortedtokens = [f for (t, f) in sorted(zip(freqToken, tokens))]
-            # difficultWords = [sortedtokens[i] for i in range(0, int(0.3 * len(tokens)))]  # take top 30% of unfrequent words
-            steps.write('difficultWords:' + str(difficultWords) + '\n')
+            # difficultWords = [sortedtokens[i] for i in range(0, int(0.3 * len(tokens)))]  # take top 30% of infrequent words
+            self.steps.write('difficultWords:' + str(difficultWords) + '\n')
 
             all_options = {}
             for difficultWord in difficultWords:
@@ -148,52 +170,62 @@ class Simplifier:
                     replacement_candidate[option] = self.freq_dict.freq(option)
                 for option in self.generate_wordnet_candidates(difficultWord):
                     replacement_candidate[option] = self.freq_dict.freq(option)
-                # Todo: Add ppdb generator
+                for option in self.generate_ppdb_candidates(difficultWord):
+                    replacement_candidate[option] = self.freq_dict.freq(option)
 
                 # 2.1. Replacement options with frequency
                 all_options[difficultWord] = replacement_candidate
-            steps.write('all_options:' + str(all_options) + '\n')
+            self.steps.write('all_options:' + str(all_options) + '\n')
 
-            # 2.2. Replacement options with bigram score
+            # # 2.2. Replacement options with bigram score
+            # best_candidates = {}
+            # for token_id in range(len(tokens)):
+            #     token = tokens[token_id]
+            #     best_candidates[token] = {}
+            #     if token in all_options:
+            #         for opt in all_options[token]:
+            #             if token_id != 0 and token_id != len(tokens):  # if not the first or the last word in the sentence
+            #                 if self.check_if_word_fits_the_context(tokens[token_id - 1:token_id + 2], token, opt):
+            #                     # Return all candidates with its bigram scores
+            #                     best_candidates[token][opt] = self.return_bigram_score(tokens[token_id - 1:token_id + 2], token, opt)
+            # self.steps.write('best_candidates:' + str(best_candidates) + '\n')
+
+            # 2.2. Replacement options with bigram score - no filtering here
             best_candidates = {}
             for token_id in range(len(tokens)):
                 token = tokens[token_id]
                 best_candidates[token] = {}
                 if token in all_options:
                     for opt in all_options[token]:
-                        if token_id != 0 and token_id != len(tokens):  # if not the first or the last word in the sentence
-                            if self.check_if_word_fits_the_context(tokens[token_id - 1:token_id + 2], token, opt):
-                                # Return all candidates with its bigram scores
-                                best_candidates[token][opt] = self.return_bigram_score(tokens[token_id - 1:token_id + 2], token, opt)
-            steps.write('best_candidates:' + str(best_candidates) + '\n')
+                        # Return all candidates with its bigram scores
+                        if token_id != 0 and token_id != len(tokens):
+                            best_candidates[token][opt] = self.return_bigram_score(tokens[token_id - 1:token_id + 2], token, opt)
+            self.steps.write('best_candidates:' + str(best_candidates) + '\n')
 
-            # 3. Generate replacements0 - take the word with the highest bigram score
+            # 3. Frequency - no filtering
             output = []
             for token in tokens:
-                if token in best_candidates:
-                    if token.istitle() is False and best_candidates[token] != {}:
-                        # Choose the one with the highest bigram score
-                        best = max(best_candidates[token], key=lambda i: best_candidates[token][i])
-                        steps.write('best v1:' + str(token) + ' -> ' + str(best) + '\n')
-                        output.append(best)
-                    else:
-                        output.append(token)
+                # Replace word if in is difficult and a candidate was found
+                if token in all_options and len(all_options[token]) > 0 and token in difficultWords and not token.istitle() and not token.isdigit():
+                    best = max(all_options[token], key=lambda i: all_options[token][i])
+                    self.steps.write('best v0:' + str(token) + ' -> ' + str(best) + '\n')
+                    output.append(best)
                 else:
                     output.append(token)
             print('v0', ' '.join(output))
-            simplified0 += ' '.join(output)
+            simplified2 += ' '.join(output)
 
-            # 3. Generate replacements1 - take the word with the highest frequency + check the context
+            # 3. Frequency - does_the_word_fit_the_context
             output = []
             for token_id in range(len(tokens)):
                 token = tokens[token_id]
-                if token in all_options and len(all_options[token]) > 0 and token in difficultWords and token.istitle() is False:
+                if token in all_options and len(all_options[token]) > 0 and token in difficultWords and not token.istitle() and not token.isdigit():
                     if token_id != 0 and token_id != len(tokens):
                         # Choose most frequent and check if fits the context
                         best_filtered = {word: all_options[token][word] for word in all_options[token] if self.check_if_word_fits_the_context(tokens[token_id - 1:token_id + 2], token, word)}
                         if best_filtered != {}:  # if not empty
                             best = max(best_filtered, key=lambda i: best_filtered[i])
-                            steps.write('best v2:' + str(token) + ' -> ' + str(best) + '\n')
+                            self.steps.write('best v1:' + str(token) + ' -> ' + str(best) + '\n')
                             output.append(best)
                         else:
                             output.append(token)
@@ -204,31 +236,212 @@ class Simplifier:
             print('v1', ' '.join(output))
             simplified1 += ' '.join(output)
 
-            # 3. Generate replacements2  - take the word with the highest frequency
+            # 3. Frequency - check_POS
             output = []
-            for token in tokens:
-                # Replace word if in is difficult and a candidate was found
-                if token in all_options and len(all_options[token]) > 0 and token in difficultWords and token.istitle() is False:
-                    best = max(all_options[token], key=lambda i: all_options[token][i])
-                    steps.write('best v3:' + str(token) + ' -> ' + str(best) + '\n')
-                    output.append(best)
+            for token_id in range(len(tokens)):
+                token = tokens[token_id]
+                if token in all_options and len(all_options[token]) > 0 and token in difficultWords and not token.istitle() and not token.isdigit():
+                    if token_id != 0 and token_id != len(tokens):
+                        # Choose most frequent and check if fits the context
+                        best_filtered = {word: all_options[token][word] for word in all_options[token] if self.check_pos_tags(tokens, token_id, word)}
+                        if best_filtered != {}:  # if not empty
+                            best = max(best_filtered, key=lambda i: best_filtered[i])
+                            self.steps.write('best v2:' + str(token) + ' -> ' + str(best) + '\n')
+                            output.append(best)
+                        else:
+                            output.append(token)
+                    else:
+                        output.append(token)
                 else:
                     output.append(token)
             print('v2', ' '.join(output))
-            simplified2 += ' '.join(output)
+            simplified1 += ' '.join(output)
 
-        return simplified0, simplified1, simplified2
+            # 3. Frequency - all filtering
+            output = []
+            for token_id in range(len(tokens)):
+                token = tokens[token_id]
+                if token in all_options and len(all_options[token]) > 0 and token in difficultWords and not token.istitle() and not token.isdigit():
+                    if token_id != 0 and token_id != len(tokens):
+                        # Choose most frequent and check if fits the context
+                        best_filtered = {word: all_options[token][word] for word in all_options[token] if self.check_if_word_fits_the_context(tokens[token_id - 1:token_id + 2], token, word) and self.check_pos_tags(tokens, token_id, word)}
+                        if best_filtered != {}:  # if not empty
+                            best = max(best_filtered, key=lambda i: best_filtered[i])
+                            self.steps.write('best v3:' + str(token) + ' -> ' + str(best) + '\n')
+                            output.append(best)
+                        else:
+                            output.append(token)
+                    else:
+                        output.append(token)
+                else:
+                    output.append(token)
+            print('v3', ' '.join(output))
+            simplified1 += ' '.join(output)
+
+            # 3. Bigram score - no filtering
+            output = []
+            for token in tokens:
+                if token in best_candidates:
+                    if not token.istitle() and not token.isdigit() and best_candidates[token] != {}:
+                        # Choose the one with the highest bigram score
+                        best = max(best_candidates[token], key=lambda i: best_candidates[token][i])
+                        self.steps.write('best v4:' + str(token) + ' -> ' + str(best) + '\n')
+                        output.append(best)
+                    else:
+                        output.append(token)
+                else:
+                    output.append(token)
+            print('v4', ' '.join(output))
+            simplified0 += ' '.join(output)
+
+            # 3. Bigram score - does_the_word_fit_the_context
+            output = []
+            for token_id in range(len(tokens)):
+                token = tokens[token_id]
+                if token in best_candidates:
+                    if not token.istitle() and not token.isdigit() and best_candidates[token] != {}:
+
+                        if token_id != 0 and token_id != len(tokens):
+                            # Choose most frequent and check if fits the context
+                            best_filtered = {word: best_candidates[token][word] for word in best_candidates[token] if self.check_if_word_fits_the_context(tokens[token_id - 1:token_id + 2], token, word)}
+                            if best_filtered != {}:  # if not empty
+                                # Choose the one with the highest bigram score
+                                best = max(best_filtered, key=lambda i: best_filtered[i])
+                                self.steps.write('best v5:' + str(token) + ' -> ' + str(best) + '\n')
+                                output.append(best)
+                            else:
+                                output.append(token)
+                        else:
+                            output.append(token)
+
+                    else:
+                        output.append(token)
+                else:
+                    output.append(token)
+            print('v5', ' '.join(output))
+            simplified0 += ' '.join(output)
+
+            # 3. Bigram score  - check_POS
+            output = []
+            for token_id in range(len(tokens)):
+                token = tokens[token_id]
+                if token in best_candidates:
+                    if not token.istitle() and not token.isdigit() and best_candidates[token] != {}:
+                        # Choose the one with the highest bigram score
+
+                        if token_id != 0 and token_id != len(tokens):
+                            # Choose most frequent and check if fits the context
+                            best_filtered = {word: best_candidates[token][word] for word in best_candidates[token] if self.check_pos_tags(tokens, token_id, word)}
+                            if best_filtered != {}:  # if not empty
+                                # Choose the one with the highest bigram score
+                                best = max(best_filtered, key=lambda i: best_filtered[i])
+                                self.steps.write('best v6:' + str(token) + ' -> ' + str(best) + '\n')
+                                output.append(best)
+                            else:
+                                output.append(token)
+                        else:
+                            output.append(token)
+
+                    else:
+                        output.append(token)
+                else:
+                    output.append(token)
+            print('v6', ' '.join(output))
+            simplified0 += ' '.join(output)
+
+            # 3. Bigram score  - all
+            output = []
+            for token_id in range(len(tokens)):
+                token = tokens[token_id]
+                if token in best_candidates:
+                    if not token.istitle() and not token.isdigit() and best_candidates[token] != {}:
+                        # Choose the one with the highest bigram score
+
+                        if token_id != 0 and token_id != len(tokens):
+                            # Choose most frequent and check if fits the context
+                            best_filtered = {word: best_candidates[token][word] for word in best_candidates[token] if self.check_if_word_fits_the_context(tokens[token_id - 1:token_id + 2], token, word) and self.check_pos_tags(tokens, token_id, word)}
+                            if best_filtered != {}:  # if not empty
+                                # Choose the one with the highest bigram score
+                                print(best_candidates[token])
+                                best = max(best_filtered, key=lambda i: best_filtered[i])
+                                self.steps.write('best v7:' + str(token) + ' -> ' + str(best) + '\n')
+                                output.append(best)
+                            else:
+                                output.append(token)
+                        else:
+                            output.append(token)
+
+                    else:
+                        output.append(token)
+                else:
+                    output.append(token)
+            print('v7', ' '.join(output))
+            simplified0 += ' '.join(output)
+
+            # # 3. Generate replacements0 - take the word with the highest bigram score
+            # output = []
+            # for token in tokens:
+            #     if token in best_candidates:
+            #         if not token.istitle() and not token.isdigit() and best_candidates[token] != {}:
+            #             # Choose the one with the highest bigram score
+            #             best = max(best_candidates[token], key=lambda i: best_candidates[token][i])
+            #             self.steps.write('best v1:' + str(token) + ' -> ' + str(best) + '\n')
+            #             output.append(best)
+            #         else:
+            #             output.append(token)
+            #     else:
+            #         output.append(token)
+            # # print('v0', ' '.join(output))
+            # simplified0 += ' '.join(output)
+            #
+            # # 3. Generate replacements1 - take the word with the highest frequency + check the context
+            # output = []
+            # for token_id in range(len(tokens)):
+            #     token = tokens[token_id]
+            #     if token in all_options and len(all_options[token]) > 0 and token in difficultWords and not token.istitle() and not token.isdigit():
+            #         if token_id != 0 and token_id != len(tokens):
+            #             # Choose most frequent and check if fits the context
+            #             best_filtered = {word: all_options[token][word] for word in all_options[token] if
+            #                              self.check_if_word_fits_the_context(tokens[token_id - 1:token_id + 2], token, word)
+            #                              and self.check_pos_tags(tokens, token_id, word)}
+            #             if best_filtered != {}:  # if not empty
+            #                 best = max(best_filtered, key=lambda i: best_filtered[i])
+            #                 self.steps.write('best v2:' + str(token) + ' -> ' + str(best) + '\n')
+            #                 output.append(best)
+            #             else:
+            #                 output.append(token)
+            #         else:
+            #             output.append(token)
+            #     else:
+            #         output.append(token)
+            # # print('v1', ' '.join(output))
+            # simplified1 += ' '.join(output)
+            #
+            # # 3. Generate replacements2  - take the word with the highest frequency
+            # output = []
+            # for token in tokens:
+            #     # Replace word if in is difficult and a candidate was found
+            #     if token in all_options and len(all_options[token]) > 0 and token in difficultWords and not token.istitle() and not token.isdigit():
+            #         best = max(all_options[token], key=lambda i: all_options[token][i])
+            #         self.steps.write('best v3:' + str(token) + ' -> ' + str(best) + '\n')
+            #         output.append(best)
+            #     else:
+            #         output.append(token)
+            # # print('v2', ' '.join(output))
+            # simplified2 += ' '.join(output)
+
+        return simplified0, simplified1, simplified2, simplified3, simplified4, simplified5, simplified6, simplified7
 
 
 if __name__ == '__main__':
     simplifier = Simplifier()
 
-    with open('wiki_input_2.txt') as f:
-        with open('wiki_output_zepp.csv', 'w') as w:
+    with open('./data/test.en') as f:
+        with open('wiki_output_final.csv', 'w') as w:
             for input in f:
-                simplified0, simplified1, simplified2 = simplifier.simplify(input)
-                print('Original', input)
-                w.write(simplified0 + '\t' + simplified1 + '\t' + simplified2 + '\n')
+                simplified0, simplified1, simplified2, simplified3, simplified4, simplified5, simplified6, simplified7 = simplifier.simplify(input)
+                print('o0', input)
+                w.write(simplified0 + '\t' + simplified1 + '\t' + simplified2 + '\t' + simplified3 + '\t' + simplified4+ '\t' + simplified5 + '\t' + simplified6 + '\t' + simplified7+'\n')
 
 # 1. Choose difficult words (long and not frequent)
 # 2. Generate candidates - from dictionary of synonyms abd top word2vec words - check for gender, tense
