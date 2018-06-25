@@ -12,6 +12,8 @@ from nltk.corpus import wordnet
 from nltk import sent_tokenize, word_tokenize, pos_tag
 
 import logging
+
+import text_simplification
 from conjugation import convert
 
 
@@ -51,25 +53,35 @@ if __name__ == '__main__':
     # pickle.dump(d, open('ngrams.pkl', 'wb'))
 
     # Choose sentences with high number of infrequent words
-    freq_dict = generate_freq_dict()
-    top_n = 5000
-    freq_top_n = sorted(freq_dict.values(), reverse=True)[top_n - 1]
+    # freq_dict = generate_freq_dict()
+    # top_n = 5000
+    # freq_top_n = sorted(freq_dict.values(), reverse=True)[top_n - 1]
+    # #
+    # difficult_sentences = []
+    # with open('wiki_input_2.txt', 'w') as w:
+    #     with open('./data/simple.aligned') as f:
+    #         number = 0
+    #         for line in f:
+    #             if number < 3000000:
+    #                 tokens = word_tokenize(line.split('\t')[2])
+    #                 score = 0
+    #                 for word in tokens:
+    #                     if word in freq_dict:
+    #                         if freq_dict[word] < freq_top_n:
+    #                             score += 1
+    #                     else:
+    #                         score += 1
+    #                 if score/len(tokens) > 0.4:
+    #                     difficult_sentences.append(line.split('\t')[2])
+    #                     w.write(line.split('\t')[2])
+    #             number += 1
 
-    difficult_sentences = []
-    with open('wiki_input_2.txt', 'w') as w:
-        with open('./data/simple.aligned') as f:
-            number = 0
-            for line in f:
-                if number < 3000000:
-                    tokens = word_tokenize(line.split('\t')[2])
-                    score = 0
-                    for word in tokens:
-                        if word in freq_dict:
-                            if freq_dict[word] < freq_top_n:
-                                score += 1
-                        else:
-                            score += 1
-                    if score/len(tokens) > 0.4:
-                        difficult_sentences.append(line.split('\t')[2])
-                        w.write(line.split('\t')[2])
-                number += 1
+    simplifier = text_simplification.Simplifier()
+    with open('./evaluation/test.en') as f:
+        with open('./evaluation/test0.lsen', 'w') as s0, open('./evaluation/test1.lsen', 'w') as s1, open('./evaluation/test2.lsen', 'w') as s2:
+            for input in f:
+                simplified0, simplified1, simplified2 = simplifier.simplify(input)
+                # print('Original', input)
+                s0.writelines(simplified0 + "\n")
+                s1.writelines(simplified1 + "\n")
+                s2.writelines(simplified2 + "\n")
