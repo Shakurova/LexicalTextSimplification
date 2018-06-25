@@ -2,6 +2,8 @@
 ./data/*
 /data/
 /model/
+/pattern/
+/ppdb/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

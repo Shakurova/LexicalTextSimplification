@@ -25,6 +25,7 @@ pip install -r requirements.txt
 
 * BROWN corpora
 * [Ngrams corpora](https://www.ngrams.info/iweb.asp)
+* [Word2vec-slim embeddings](https://github.com/eyaler/word2vec-slim)
 
 
 ## Results

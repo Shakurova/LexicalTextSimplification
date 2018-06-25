@@ -42,10 +42,13 @@ class Simplifier:
     def check_if_word_fits_the_context(self, context, token, replacement):
         """ Check if bigram with the replacement exists. """
         # Todo: combine in a single condition
-        if (context[0] + ' ' + replacement).lower() in self.ngram_freq_dict.keys():
-            return True
-        if (replacement + ' ' + context[2]).lower() in self.ngram_freq_dict.keys():
-            return True
+        if len(context) == 3:
+            if (context[0] + ' ' + replacement).lower() in self.ngram_freq_dict.keys():
+                return True
+            if (replacement + ' ' + context[2]).lower() in self.ngram_freq_dict.keys():
+                return True
+            else:
+                return False
         else:
             return False
 
@@ -86,6 +89,10 @@ class Simplifier:
 
         return candidates
 
+    def generate_ppdf_candidates(self, word):
+        # Todo: return all ppdf candidates form the dictionary
+        return True
+
     def check_if_replacable(self, word):
         """ Check POS, we only want to replace nouns, adjectives and verbs. """
         word_tag = pos_tag([word])
@@ -114,22 +121,22 @@ class Simplifier:
         sents = sent_tokenize(input)  # Split by sentences
 
         # Top N most frequent words we never replace
-        # top_n = 3000
-        # freq_top_n = sorted(self.freq_dict.values(), reverse=True)[top_n - 1]
+        top_n = 3000
+        freq_top_n = sorted(self.freq_dict.values(), reverse=True)[top_n - 1]
 
         for sent in sents:
             steps.write(sent + '\n')
             tokens = word_tokenize(sent)  # Split a sentence by words
 
             # Find difficult words - long and unfrequent
-            # difficultWords = [t for t in tokens if self.freq_dict[t] < freq_top_n]
+            difficultWords = [t for t in tokens if self.freq_dict[t] < freq_top_n]
 
             # 1. Find difficult words
-            freqToken = [None] * len(tokens)
-            for index, token in enumerate(tokens):
-                freqToken[index] = self.freq_dict.freq(token)
-            sortedtokens = [f for (t, f) in sorted(zip(freqToken, tokens))]
-            difficultWords = [sortedtokens[i] for i in range(0, int(0.3 * len(tokens)))]  # take top 30% of unfrequent words
+            # freqToken = [None] * len(tokens)
+            # for index, token in enumerate(tokens):
+            #     freqToken[index] = self.freq_dict.freq(token)
+            # sortedtokens = [f for (t, f) in sorted(zip(freqToken, tokens))]
+            # difficultWords = [sortedtokens[i] for i in range(0, int(0.3 * len(tokens)))]  # take top 30% of unfrequent words
             steps.write('difficultWords:' + str(difficultWords) + '\n')
 
             all_options = {}
@@ -139,10 +146,9 @@ class Simplifier:
                 # 2. Generate candidates
                 for option in self.generate_word2vec_candidates(difficultWord):
                     replacement_candidate[option] = self.freq_dict.freq(option)
-                    # steps.write(option.lower() + ' -> ' + difficultWord.lower() + ' = ' + convert(option.lower(), difficultWord.lower()) + '\n')
                 for option in self.generate_wordnet_candidates(difficultWord):
                     replacement_candidate[option] = self.freq_dict.freq(option)
-                    # steps.write(option.lower() + ' -> ' + difficultWord.lower() + ' = ' + convert(option.lower(), difficultWord.lower()) + '\n')
+                # Todo: Add ppdb generator
 
                 # 2.1. Replacement options with frequency
                 all_options[difficultWord] = replacement_candidate
@@ -217,8 +223,8 @@ class Simplifier:
 if __name__ == '__main__':
     simplifier = Simplifier()
 
-    with open('input.txt') as f:
-        with open('output.csv', 'w') as w:
+    with open('wiki_input_2.txt') as f:
+        with open('wiki_output_zepp.csv', 'w') as w:
             for input in f:
                 simplified0, simplified1, simplified2 = simplifier.simplify(input)
                 print('Original', input)
