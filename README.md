@@ -23,8 +23,8 @@ pip install -r requirements.txt
 
 ## Datasets used
 
-BROWN corpora
-Ngrams corpora
+* BROWN corpora
+* [Ngrams corpora](https://www.ngrams.info/iweb.asp)
 
 
 ## Results
