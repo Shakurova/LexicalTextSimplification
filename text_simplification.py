@@ -65,6 +65,10 @@ class Simplifier:
         if self.check_if_replacable(word) and word in model:
             candidates = [convert(option[0].lower(), word) for option in model.most_similar(word, topn=topn)
                           if convert(option[0].lower(), word) != word and convert(option[0].lower(), word) != None]
+            # Print
+            for option in model.most_similar(word, topn=topn):
+                if convert(option[0].lower(), word) != word and convert(option[0].lower(), word) != None and option[0].lower() != convert(option[0].lower(), word):
+                    print(option[0].lower() + ' -> ' + word.lower() + ' = ' + convert(option[0].lower(), word))
 
         return candidates
 
@@ -76,6 +80,9 @@ class Simplifier:
                 for lemma in synset.lemmas():
                     if convert(lemma.name().lower(), word) != word and convert(lemma.name().lower(), word) != None:
                         candidates.add(convert(lemma.name().lower(), word))
+                        # Print
+                        if lemma.name().lower() != convert(lemma.name().lower(), word):
+                            print(lemma.name().lower() + ' -> ' + word.lower() + ' = ' + convert(lemma.name().lower(), word))
 
         return candidates
 
@@ -132,8 +139,10 @@ class Simplifier:
                 # 2. Generate candidates
                 for option in self.generate_word2vec_candidates(difficultWord):
                     replacement_candidate[option] = self.freq_dict.freq(option)
+                    # steps.write(option.lower() + ' -> ' + difficultWord.lower() + ' = ' + convert(option.lower(), difficultWord.lower()) + '\n')
                 for option in self.generate_wordnet_candidates(difficultWord):
                     replacement_candidate[option] = self.freq_dict.freq(option)
+                    # steps.write(option.lower() + ' -> ' + difficultWord.lower() + ' = ' + convert(option.lower(), difficultWord.lower()) + '\n')
 
                 # 2.1. Replacement options with frequency
                 all_options[difficultWord] = replacement_candidate
@@ -218,3 +227,5 @@ if __name__ == '__main__':
 # 1. Choose difficult words (long and not frequent)
 # 2. Generate candidates - from dictionary of synonyms abd top word2vec words - check for gender, tense
 # 3. Choose the best candidate - check the context and frequency
+
+# Todo: choose long words
