@@ -34,8 +34,7 @@ def remove_comma_and_article(expression):
 def is_trivial(exp1, exp2, relation):
     """
     Return True if:
-        - w1 and w2 differ only in gender and/or number
-        - w1 and w2 differ only in a heading preposition
+        The words have the same stem or are only 1 symbol apart
 
     :param exp1: tuple/list of strings, expression1
     :param exp2: tuple/list of strings, expression2
@@ -49,20 +48,25 @@ def is_trivial(exp1, exp2, relation):
     if relation == 'ReverseEntailment':  # don't include
         return True
 
-    # if relation == 'Equivalence':
-        # Synonyms are unlikely to be 1 symbol apart, but are likely to be US/UK spelling differences we do not want
-    if (editdistance.eval(exp1[0], exp2[0]) == 1):
+    if (editdistance.eval(exp1[0], exp2[0]) <= 1):
         return True
 
 
-    if len(exp1) == 1 and len(exp2) == 1 and ps.stem(exp1[0]) == ps.stem(exp2[0]):
+    if ps.stem(exp1[0]) == ps.stem(exp2[0]):
         return True
 
     return False
 
 
 def load_ppdb(path='.data/ppdb-2.0-s-lexical', load_pickle = True):
-    PICKLE_PATH = './data/ppdb_lexical_rules.pkl'
+    """
+    Load and filter the paraphrases, saving the filtered results for faster loading later
+    :param path: to the ppdb database to load
+    :param load_pickle: whether to load from pickle if such file exists
+    :return: boolean
+    """
+
+    PICKLE_PATH = path + '.pkl'
     if load_pickle and os.path.isfile(PICKLE_PATH):
         return pickle.load(open(PICKLE_PATH, 'rb'))
     else:
@@ -78,13 +82,15 @@ def load_ppdb(path='.data/ppdb-2.0-s-lexical', load_pickle = True):
                 rhs = fields[2].strip().split()
                 relation = fields[-1].strip()
 
-                lhs = tuple(remove_comma_and_article(lhs))
-                rhs = tuple(remove_comma_and_article(rhs))
 
-                if len(lhs) == 0 or len(rhs) == 0:
+                lhs = remove_comma_and_article(lhs)
+                rhs = remove_comma_and_article(rhs)
+
+                # We only care about 1-word replacements
+                if len(lhs) != 1 or len(rhs) != 1:
                     continue
 
-                # filter out trivial number/gender variations
+                # filter out trivial variations
                 if is_trivial(lhs, rhs, relation):
                     # print(lhs, rhs, relation)
                     continue
@@ -92,19 +98,23 @@ def load_ppdb(path='.data/ppdb-2.0-s-lexical', load_pickle = True):
                 # print(lhs, rhs, relation)
                 # add rhs to the transformation dictionary
                 # ppdb_rules(lhs, rhs)
-                ppdb_rules[lhs[0]] = rhs[0]
+                if lhs[0] == 'and':
+                    print('...')
+                if lhs[0] not in ppdb_rules:
+                    ppdb_rules[lhs[0]] = set()
+                ppdb_rules[lhs[0]].add(rhs[0])
         print("Nr of rules: ", len(ppdb_rules))
         pickle.dump(ppdb_rules, open(PICKLE_PATH, 'wb'))
         return ppdb_rules
 
 
 if __name__ == '__main__':
-    rules = load_ppdb(path='./data/ppdb-2.0-s-all', load_pickle=False)
+    rules = load_ppdb(path='./data/ppdb-2.0-xxl-lexical', load_pickle=False)
     input = 'These theorists were sometimes only loosely affiliated, and some authors point out that the "Frankfurt circle" was neither a philosophical school nor a political group.'
 
     for word in input.split():
         if word in rules:
-            print(word + " -> "  + rules[word])
+            print(word + " -> "  + str(rules[word]))
 
 
 # To-do:
