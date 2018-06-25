@@ -1,33 +1,10 @@
 # import ppdb
 # import cPickle as pickle
-import ujson
+import os
+import pickle
+# import ujson
 import editdistance
-
-# ppdb_rules = ppdb.load_ppdb('ppdb-2.0-s-all')
-#
-# # print(type(ppdb_rules))
-# # print(ppdb_rules.keys())
-# # print(ppdb_rules['reallocations'])
-#
-# pickle.dump(ppdb_rules, open('ppdb_rules.pkl', 'w'))
-#
-#
-# # # for portuguese
-# # ppdb_rules_pt = ppdb_pt.load_ppdb('ppdb-2.0-s-all')
-#
-#
-# # print(ppdb_rules.get_rhs('A'))
-#
-# # for texts in wikipedia use ppdb to make simplifications
-# # for that all rules in ppdb classify as good (simplifying) and bad
-# # apply good rules
-# # filter wirds derivations (so it the biggest part of the word is the same - bad rule)
-#
-#
-# rules = pickle.load(open('ppdb_rules.pkl'))
-#
-# ujson.dumps(ppdb_rules, open('ppdb_rules.json', 'w'))
-
+import nltk
 
 def remove_comma_and_article(expression):
     """
@@ -66,56 +43,68 @@ def is_trivial(exp1, exp2, relation):
     """
 
     endings = ['ing', 'ed', 's', 'ic']
+    ps = nltk.PorterStemmer()
 
-    if relation[0] == 'ReverseEntailment':  # don't include
+    # Contains many false positives
+    if relation == 'ReverseEntailment':  # don't include
         return True
 
-    if relation[0] == 'Equivalence':
-
-        if (editdistance.eval(exp1[0], exp2[0]) == 1) and (exp1[0][1] == exp2[0][1]):
-            return True
-
-        return False
+    # if relation == 'Equivalence':
+        # Synonyms are unlikely to be 1 symbol apart, but are likely to be US/UK spelling differences we do not want
+    if (editdistance.eval(exp1[0], exp2[0]) == 1):
+        return True
 
 
-def load_ppdb(path='ppdb-2.0-s-lexical'):
-    ppdb_rules = {}
+    if len(exp1) == 1 and len(exp2) == 1 and ps.stem(exp1[0]) == ps.stem(exp2[0]):
+        return True
 
-    with open(path, 'r') as f:
-        for line in f:
-            # line = line.decode('utf-8')
-            # discard lines with unrecoverable encoding errors
-            if '\\ x' in line or 'xc3' in line:
-                continue
-            fields = line.split('|||')
-            lhs = fields[1].strip().split()
-            rhs = fields[2].strip().split()
-            relation = fields[-1].strip().split()
+    return False
 
-            lhs = tuple(remove_comma_and_article(lhs))
-            rhs = tuple(remove_comma_and_article(rhs))
 
-            if len(lhs) == 0 or len(rhs) == 0:
-                continue
+def load_ppdb(path='.data/ppdb-2.0-s-lexical', load_pickle = True):
+    PICKLE_PATH = './data/ppdb_lexical_rules.pkl'
+    if load_pickle and os.path.isfile(PICKLE_PATH):
+        return pickle.load(open(PICKLE_PATH, 'rb'))
+    else:
+        ppdb_rules = {}
+        with open(path, 'r') as f:
+            for line in f:
+                # line = line.decode('utf-8')
+                # discard lines with unrecoverable encoding errors
+                if '\\ x' in line or 'xc3' in line:
+                    continue
+                fields = line.split('|||')
+                lhs = fields[1].strip().split()
+                rhs = fields[2].strip().split()
+                relation = fields[-1].strip()
 
-            # filter out trivial number/gender variations
-            if is_trivial(lhs, rhs, relation):
+                lhs = tuple(remove_comma_and_article(lhs))
+                rhs = tuple(remove_comma_and_article(rhs))
+
+                if len(lhs) == 0 or len(rhs) == 0:
+                    continue
+
+                # filter out trivial number/gender variations
+                if is_trivial(lhs, rhs, relation):
+                    # print(lhs, rhs, relation)
+                    continue
+
                 # print(lhs, rhs, relation)
-                continue
-
-            print(lhs, rhs, relation)
-            # add rhs to the transformation dictionary
-            # ppdb_rules(lhs, rhs)
-            ppdb_rules[rhs] = lhs
-
-    return ppdb_rules
+                # add rhs to the transformation dictionary
+                # ppdb_rules(lhs, rhs)
+                ppdb_rules[lhs[0]] = rhs[0]
+        print("Nr of rules: ", len(ppdb_rules))
+        pickle.dump(ppdb_rules, open(PICKLE_PATH, 'wb'))
+        return ppdb_rules
 
 
 if __name__ == '__main__':
-    rules = load_ppdb(path='ppdb-2.0-s-lexical')
-    print(rules)
-    print(type(rules))
-    ujson.dump(rules, open('ppdb_lexical_rules.json', 'w'))
+    rules = load_ppdb(path='./data/ppdb-2.0-s-all', load_pickle=False)
+    input = 'These theorists were sometimes only loosely affiliated, and some authors point out that the "Frankfurt circle" was neither a philosophical school nor a political group.'
+
+    for word in input.split():
+        if word in rules:
+            print(word + " -> "  + rules[word])
 
 
 # To-do:
