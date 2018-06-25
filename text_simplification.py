@@ -108,6 +108,15 @@ class Simplifier:
         else:
             return False
 
+    def check_pos_tags(self, sent, token_id, replacement):
+        old_tag = pos_tag(sent)[token_id][1]
+        sent[token_id] = replacement
+        new_tag = pos_tag(sent)[0][1]
+        if new_tag == old_tag:
+            return True
+        else:
+            return False
+
     def pick_tokens_by_proportion(self, tokens, threshold=0.3):
         """ N - Proportion of words in a sentence to replace (rounded down). """
         # Rank by frequency
@@ -134,6 +143,7 @@ class Simplifier:
         for sent in sents:
             self.steps.write(sent + '\n')
             tokens = word_tokenize(sent)  # Split a sentence by words
+            #tags = pos_tag(tokens)
 
             # Find difficult words - long and infrequent
             difficultWords = [t for t in tokens if self.freq_dict[t] < freq_top_n]
@@ -198,7 +208,9 @@ class Simplifier:
                 if token in all_options and len(all_options[token]) > 0 and token in difficultWords and token.istitle() is False:
                     if token_id != 0 and token_id != len(tokens):
                         # Choose most frequent and check if fits the context
-                        best_filtered = {word: all_options[token][word] for word in all_options[token] if self.check_if_word_fits_the_context(tokens[token_id - 1:token_id + 2], token, word)}
+                        best_filtered = {word: all_options[token][word] for word in all_options[token] if
+                                         self.check_if_word_fits_the_context(tokens[token_id - 1:token_id + 2], token, word)
+                                         and self.check_pos_tags(tokens, token_id, word)}
                         if best_filtered != {}:  # if not empty
                             best = max(best_filtered, key=lambda i: best_filtered[i])
                             self.steps.write('best v2:' + str(token) + ' -> ' + str(best) + '\n')
