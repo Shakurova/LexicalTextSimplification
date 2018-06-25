@@ -13,7 +13,7 @@ For ranking we either use frequency or bigram score which is the averaged freque
 
 In the end, we choose the most suitable word and convert it to the same form as the original word (tense, plural/singular) using pattern library (reference).
 
-##  HOW RO RUN
+##  HOW TO RUN
 
 Code is written in Python 3.5. You need to install [Pattern library](https://github.com/clips/pattern/tree/python3) Python3 branch
 
@@ -30,7 +30,7 @@ pip install -r requirements.txt
 
 ## Results
 
-Lexical text simplification - verion 1, verion 2, verion 3
+Lexical text simplification - version 1, version 2, version 3
 ```
 best v1:impression -> idea
 best v2:impression -> sense
@@ -38,7 +38,7 @@ best v3:impression -> sense
 
 ```
 
-Lexical text simplification - verion 1, verion 2, verion 3
+Lexical text simplification - version 1, version 2, version 3
 ```
 original: Nevertheless, they spoke with a common paradigm in mind; they shared the Marxist Hegelian premises and were preoccupied with similar questions.
 v0 Nevertheless , they spoke with a common image in mind ; they embraced the Marxist Hegelian assumptions and were obsessed with similar questions .
