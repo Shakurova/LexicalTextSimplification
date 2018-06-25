@@ -42,14 +42,17 @@ class Simplifier:
     def check_if_word_fits_the_context(self, context, token, replacement):
         """ Check if bigram with the replacement exists. """
         # Todo: combine in a single condition
-        if (context[0] + ' ' + replacement).lower() in self.ngram_freq_dict.keys():
-            return True
-        if (replacement + ' ' + context[2]).lower() in self.ngram_freq_dict.keys():
-            return True
+        if len(context) == 3:
+            if (context[0] + ' ' + replacement).lower() in self.ngram_freq_dict.keys():
+                return True
+            if (replacement + ' ' + context[2]).lower() in self.ngram_freq_dict.keys():
+                return True
+            else:
+                return False
         else:
             return False
 
-    def return_bigram_score(self, context, replacement):
+    def return_bigram_score(self, context, token, replacement):
         """ Return ad averaged frequency of left- and right-context bigram. """
         # Todo: incorporate word2vec value
         score = 0
@@ -65,6 +68,10 @@ class Simplifier:
         if self.check_if_replacable(word) and word in model:
             candidates = [convert(option[0].lower(), word) for option in model.most_similar(word, topn=topn)
                           if convert(option[0].lower(), word) != word and convert(option[0].lower(), word) != None]
+            # Print
+            for option in model.most_similar(word, topn=topn):
+                if convert(option[0].lower(), word) != word and convert(option[0].lower(), word) != None and option[0].lower() != convert(option[0].lower(), word):
+                    print(option[0].lower() + ' -> ' + word.lower() + ' = ' + convert(option[0].lower(), word))
 
         return candidates
 
@@ -76,8 +83,15 @@ class Simplifier:
                 for lemma in synset.lemmas():
                     if convert(lemma.name().lower(), word) != word and convert(lemma.name().lower(), word) != None:
                         candidates.add(convert(lemma.name().lower(), word))
+                        # Print
+                        if lemma.name().lower() != convert(lemma.name().lower(), word):
+                            print(lemma.name().lower() + ' -> ' + word.lower() + ' = ' + convert(lemma.name().lower(), word))
 
         return candidates
+
+    def generate_ppdf_candidates(self, word):
+        # Todo: return all ppdf candidates form the dictionary
+        return True
 
     def check_if_replacable(self, word):
         """ Check POS, we only want to replace nouns, adjectives and verbs. """
@@ -88,13 +102,16 @@ class Simplifier:
             return False
 
     def pick_tokens_by_proportion(self, tokens, threshold=0.3):
-        """ threshold - Proportion of words in a sentence to replace (rounded down). """
+        """ N - Proportion of words in a sentence to replace (rounded down). """
         # Rank by frequency
         freqToken = [None] * len(tokens)
         for index, token in enumerate(tokens):
             freqToken[index] = self.freq_dict.freq(token)
+        # print('freqToken = {}'.format(freqToken))
         sortedtokens = [f for (t, f) in sorted(zip(freqToken, tokens))]
-        return sortedtokens[:int(0.3 * len(tokens))] # take top 30% of unfrequent words
+        # print(sortedtokens)
+
+        return sortedtokens[:int(threshold * len(tokens))]
 
     def simplify(self, input):
         simplified0 = ''
@@ -104,19 +121,22 @@ class Simplifier:
         sents = sent_tokenize(input)  # Split by sentences
 
         # Top N most frequent words we never replace
-        # top_n = 3000
-        # freq_top_n = sorted(self.freq_dict.values(), reverse=True)[top_n - 1]
+        top_n = 3000
+        freq_top_n = sorted(self.freq_dict.values(), reverse=True)[top_n - 1]
 
         for sent in sents:
             steps.write(sent + '\n')
             tokens = word_tokenize(sent)  # Split a sentence by words
 
-            # Replace only words that are not in the top_n most frequent in the dictionary
-            # difficultWords = [t for t in tokens if self.freq_dict[t] < freq_top_n]
+            # Find difficult words - long and unfrequent
+            difficultWords = [t for t in tokens if self.freq_dict[t] < freq_top_n]
 
             # 1. Find difficult words
-            difficultWords = self.pick_tokens_by_proportion(tokens, 0.3)
-
+            # freqToken = [None] * len(tokens)
+            # for index, token in enumerate(tokens):
+            #     freqToken[index] = self.freq_dict.freq(token)
+            # sortedtokens = [f for (t, f) in sorted(zip(freqToken, tokens))]
+            # difficultWords = [sortedtokens[i] for i in range(0, int(0.3 * len(tokens)))]  # take top 30% of unfrequent words
             steps.write('difficultWords:' + str(difficultWords) + '\n')
 
             all_options = {}
@@ -128,6 +148,7 @@ class Simplifier:
                     replacement_candidate[option] = self.freq_dict.freq(option)
                 for option in self.generate_wordnet_candidates(difficultWord):
                     replacement_candidate[option] = self.freq_dict.freq(option)
+                # Todo: Add ppdb generator
 
                 # 2.1. Replacement options with frequency
                 all_options[difficultWord] = replacement_candidate
@@ -168,10 +189,11 @@ class Simplifier:
                 token = tokens[token_id]
                 if token in all_options and len(all_options[token]) > 0 and token in difficultWords and token.istitle() is False:
                     if token_id != 0 and token_id != len(tokens):
-                        # Choose most frequent
-                        best = max(all_options[token], key=lambda i: all_options[token][i])
-                        steps.write('best v2:' + str(token) + ' -> ' + str(best) + '\n')
-                        if self.check_if_word_fits_the_context(tokens[token_id - 1:token_id + 2], token, best):
+                        # Choose most frequent and check if fits the context
+                        best_filtered = {word: all_options[token][word] for word in all_options[token] if self.check_if_word_fits_the_context(tokens[token_id - 1:token_id + 2], token, word)}
+                        if best_filtered != {}:  # if not empty
+                            best = max(best_filtered, key=lambda i: best_filtered[i])
+                            steps.write('best v2:' + str(token) + ' -> ' + str(best) + '\n')
                             output.append(best)
                         else:
                             output.append(token)
@@ -201,8 +223,8 @@ class Simplifier:
 if __name__ == '__main__':
     simplifier = Simplifier()
 
-    with open('input.txt') as f:
-        with open('output2.csv', 'w') as w:
+    with open('wiki_input_2.txt') as f:
+        with open('wiki_output_zepp.csv', 'w') as w:
             for input in f:
                 simplified0, simplified1, simplified2 = simplifier.simplify(input)
                 print('Original', input)
@@ -211,3 +233,5 @@ if __name__ == '__main__':
 # 1. Choose difficult words (long and not frequent)
 # 2. Generate candidates - from dictionary of synonyms abd top word2vec words - check for gender, tense
 # 3. Choose the best candidate - check the context and frequency
+
+# Todo: choose long words
