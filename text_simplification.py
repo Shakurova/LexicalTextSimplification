@@ -11,18 +11,12 @@ from nltk.corpus import wordnet
 from nltk import sent_tokenize, word_tokenize, pos_tag
 
 import logging
+
+import main_ppdb
 from conjugation import convert
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
-# Load Google's pre-trained Word2Vec model
-model = gensim.models.KeyedVectors.load_word2vec_format('./model/GoogleNews-vectors-negative300-SLIM.bin', binary=True)
-
-# Load ngrams frequency dictionary
-ngrams = pd.read_csv('ngrams.csv')
-ngrams = ngrams.drop_duplicates(subset='bigram', keep='first')
-
-steps = open('steps.txt', 'w')
 
 
 def generate_freq_dict():
@@ -36,8 +30,18 @@ def generate_freq_dict():
 
 class Simplifier:
     def __init__(self):
+        # Load ngrams frequency dictionary
+        ngrams = pd.read_csv('ngrams.csv')
+        ngrams = ngrams.drop_duplicates(subset='bigram', keep='first')
+
         self.ngram_freq_dict = dict(zip(ngrams.bigram, ngrams.freq))
         self.freq_dict = generate_freq_dict()
+
+        # Load Google's pre-trained Word2Vec model
+        self.word2vec_model = gensim.models.KeyedVectors.load_word2vec_format('./model/GoogleNews-vectors-negative300-SLIM.bin',
+                                                                              binary=True)
+        self.steps = open('steps.txt', 'w')
+        self.ppdb_rules = main_ppdb.load_ppdb('./data/ppdb-2.0-xxl-lexical')
 
     def check_if_word_fits_the_context(self, context, token, replacement):
         """ Check if bigram with the replacement exists. """
@@ -65,11 +69,11 @@ class Simplifier:
     def generate_word2vec_candidates(self, word, topn=15):
         """ Return top words from word2vec for each word in input. """
         candidates = set()
-        if self.check_if_replacable(word) and word in model:
-            candidates = [convert(option[0].lower(), word) for option in model.most_similar(word, topn=topn)
+        if self.check_if_replacable(word) and word in self.word2vec_model:
+            candidates = [convert(option[0].lower(), word) for option in self.word2vec_model.most_similar(word, topn=topn)
                           if convert(option[0].lower(), word) != word and convert(option[0].lower(), word) != None]
             # Print
-            for option in model.most_similar(word, topn=topn):
+            for option in self.word2vec_model.most_similar(word, topn=topn):
                 if convert(option[0].lower(), word) != word and convert(option[0].lower(), word) != None and option[0].lower() != convert(option[0].lower(), word):
                     print(option[0].lower() + ' -> ' + word.lower() + ' = ' + convert(option[0].lower(), word))
 
@@ -90,8 +94,7 @@ class Simplifier:
         return candidates
 
     def generate_ppdf_candidates(self, word):
-        # Todo: return all ppdf candidates form the dictionary
-        return True
+        return self.ppdb_rules[word] if word in self.ppdb_rules else []
 
     def check_if_replacable(self, word):
         """ Check POS, we only want to replace nouns, adjectives and verbs. """
@@ -125,10 +128,10 @@ class Simplifier:
         freq_top_n = sorted(self.freq_dict.values(), reverse=True)[top_n - 1]
 
         for sent in sents:
-            steps.write(sent + '\n')
+            self.steps.write(sent + '\n')
             tokens = word_tokenize(sent)  # Split a sentence by words
 
-            # Find difficult words - long and unfrequent
+            # Find difficult words - long and infrequent
             difficultWords = [t for t in tokens if self.freq_dict[t] < freq_top_n]
 
             # 1. Find difficult words
@@ -136,8 +139,8 @@ class Simplifier:
             # for index, token in enumerate(tokens):
             #     freqToken[index] = self.freq_dict.freq(token)
             # sortedtokens = [f for (t, f) in sorted(zip(freqToken, tokens))]
-            # difficultWords = [sortedtokens[i] for i in range(0, int(0.3 * len(tokens)))]  # take top 30% of unfrequent words
-            steps.write('difficultWords:' + str(difficultWords) + '\n')
+            # difficultWords = [sortedtokens[i] for i in range(0, int(0.3 * len(tokens)))]  # take top 30% of infrequent words
+            self.steps.write('difficultWords:' + str(difficultWords) + '\n')
 
             all_options = {}
             for difficultWord in difficultWords:
@@ -148,11 +151,12 @@ class Simplifier:
                     replacement_candidate[option] = self.freq_dict.freq(option)
                 for option in self.generate_wordnet_candidates(difficultWord):
                     replacement_candidate[option] = self.freq_dict.freq(option)
-                # Todo: Add ppdb generator
+                for option in self.generate_ppdf_candidates(difficultWord):
+                    replacement_candidate[option] = self.freq_dict.freq(option)
 
                 # 2.1. Replacement options with frequency
                 all_options[difficultWord] = replacement_candidate
-            steps.write('all_options:' + str(all_options) + '\n')
+            self.steps.write('all_options:' + str(all_options) + '\n')
 
             # 2.2. Replacement options with bigram score
             best_candidates = {}
@@ -165,7 +169,7 @@ class Simplifier:
                             if self.check_if_word_fits_the_context(tokens[token_id - 1:token_id + 2], token, opt):
                                 # Return all candidates with its bigram scores
                                 best_candidates[token][opt] = self.return_bigram_score(tokens[token_id - 1:token_id + 2], token, opt)
-            steps.write('best_candidates:' + str(best_candidates) + '\n')
+            self.steps.write('best_candidates:' + str(best_candidates) + '\n')
 
             # 3. Generate replacements0 - take the word with the highest bigram score
             output = []
@@ -174,7 +178,7 @@ class Simplifier:
                     if token.istitle() is False and best_candidates[token] != {}:
                         # Choose the one with the highest bigram score
                         best = max(best_candidates[token], key=lambda i: best_candidates[token][i])
-                        steps.write('best v1:' + str(token) + ' -> ' + str(best) + '\n')
+                        self.steps.write('best v1:' + str(token) + ' -> ' + str(best) + '\n')
                         output.append(best)
                     else:
                         output.append(token)
@@ -193,7 +197,7 @@ class Simplifier:
                         best_filtered = {word: all_options[token][word] for word in all_options[token] if self.check_if_word_fits_the_context(tokens[token_id - 1:token_id + 2], token, word)}
                         if best_filtered != {}:  # if not empty
                             best = max(best_filtered, key=lambda i: best_filtered[i])
-                            steps.write('best v2:' + str(token) + ' -> ' + str(best) + '\n')
+                            self.steps.write('best v2:' + str(token) + ' -> ' + str(best) + '\n')
                             output.append(best)
                         else:
                             output.append(token)
@@ -210,7 +214,7 @@ class Simplifier:
                 # Replace word if in is difficult and a candidate was found
                 if token in all_options and len(all_options[token]) > 0 and token in difficultWords and token.istitle() is False:
                     best = max(all_options[token], key=lambda i: all_options[token][i])
-                    steps.write('best v3:' + str(token) + ' -> ' + str(best) + '\n')
+                    self.steps.write('best v3:' + str(token) + ' -> ' + str(best) + '\n')
                     output.append(best)
                 else:
                     output.append(token)
