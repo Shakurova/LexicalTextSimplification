@@ -174,10 +174,11 @@ class Simplifier:
                 token = tokens[token_id]
                 if token in all_options and len(all_options[token]) > 0 and token in difficultWords and token.istitle() is False:
                     if token_id != 0 and token_id != len(tokens):
-                        # Choose most frequent
-                        best = max(all_options[token], key=lambda i: all_options[token][i])
-                        steps.write('best v2:' + str(token) + ' -> ' + str(best) + '\n')
-                        if self.check_if_word_fits_the_context(tokens[token_id - 1:token_id + 2], token, best):
+                        # Choose most frequent and check if fits the context
+                        best_filtered = {word: all_options[token][word] for word in all_options[token] if self.check_if_word_fits_the_context(tokens[token_id - 1:token_id + 2], token, word)}
+                        if best_filtered != {}:  # if not empty
+                            best = max(best_filtered, key=lambda i: best_filtered[i])
+                            steps.write('best v2:' + str(token) + ' -> ' + str(best) + '\n')
                             output.append(best)
                         else:
                             output.append(token)
