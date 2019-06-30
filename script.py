@@ -32,56 +32,11 @@ def generate_freq_dict():
 
 if __name__ == '__main__':
 
-    # # Ngrams
-    # with open('clean_ngrams.txt', 'w') as w:
-    #     with open('./data/ngrams_words_2.txt') as f:
-    #         i = 0
-    #         w.write('freq	w1	w2	t1	t2\n')
-    #         for line in f:
-    #             line = re.sub(' +', '', line)
-    #             w.write(line)
-    #             i += 1
-    #
-    # ngrams = pd.read_csv('clean_ngrams.txt', delimiter='\t')
-    # print(ngrams.head())
-    # ngrams['bigram'] = ngrams.apply(concat, axis=1)
-    # ngrams.to_csv('ngrams.csv')
-    # d = ngrams.to_dict('dict')
-    # for i in d:
-    #     print(i)
-    #     print(d[i])
-    # pickle.dump(d, open('ngrams.pkl', 'wb'))
-
-    # Choose sentences with high number of infrequent words
-    # freq_dict = generate_freq_dict()
-    # top_n = 5000
-    # freq_top_n = sorted(freq_dict.values(), reverse=True)[top_n - 1]
-    # #
-    # difficult_sentences = []
-    # with open('wiki_input_2.txt', 'w') as w:
-    #     with open('./data/simple.aligned') as f:
-    #         number = 0
-    #         for line in f:
-    #             if number < 3000000:
-    #                 tokens = word_tokenize(line.split('\t')[2])
-    #                 score = 0
-    #                 for word in tokens:
-    #                     if word in freq_dict:
-    #                         if freq_dict[word] < freq_top_n:
-    #                             score += 1
-    #                     else:
-    #                         score += 1
-    #                 if score/len(tokens) > 0.4:
-    #                     difficult_sentences.append(line.split('\t')[2])
-    #                     w.write(line.split('\t')[2])
-    #             number += 1
-
     simplifier = text_simplification.Simplifier()
     with open('./evaluation/test.en') as f:
         with open('./evaluation/test0.lsen', 'w') as s0, open('./evaluation/test1.lsen', 'w') as s1, open('./evaluation/test2.lsen', 'w') as s2:
             for input in f:
                 simplified0, simplified1, simplified2 = simplifier.simplify(input)
-                # print('Original', input)
                 s0.writelines(simplified0 + "\n")
                 s1.writelines(simplified1 + "\n")
                 s2.writelines(simplified2 + "\n")

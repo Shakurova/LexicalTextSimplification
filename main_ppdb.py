@@ -26,8 +26,6 @@ def remove_comma_and_article(expression):
     if expression[-1] == ',':
         expression = expression[:-1]
 
-    # here check that left is more frequent than right
-
     return expression
 
 
@@ -73,8 +71,7 @@ def load_ppdb(path='.data/ppdb-2.0-s-lexical', load_pickle = True):
         ppdb_rules = {}
         with open(path, 'r') as f:
             for line in f:
-                # line = line.decode('utf-8')
-                # discard lines with unrecoverable encoding errors
+                # Discard lines with unrecoverable encoding errors
                 if '\\ x' in line or 'xc3' in line:
                     continue
                 fields = line.split('|||')
@@ -95,9 +92,7 @@ def load_ppdb(path='.data/ppdb-2.0-s-lexical', load_pickle = True):
                     # print(lhs, rhs, relation)
                     continue
 
-                # print(lhs, rhs, relation)
-                # add rhs to the transformation dictionary
-                # ppdb_rules(lhs, rhs)
+                # Add rhs to the transformation dictionary
                 if lhs[0] == 'and':
                     print('...')
                 if lhs[0] not in ppdb_rules:
@@ -115,16 +110,3 @@ if __name__ == '__main__':
     for word in input.split():
         if word in rules:
             print(word + " -> "  + str(rules[word]))
-
-
-# To-do:
-# Approach 1:
-#   Replacing complex words with their most frequent synonym.
-
-# Select all candidates;
-# Explicit sense labelling;
-# Implicit sense labelling;
-# Part-of-speech tag ltering; and
-# Semantic similarity ltering.
-
-# find a corpora with synonyms - filter on how close they are (look at presentation slide I sent on telegram)

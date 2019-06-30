@@ -75,10 +75,6 @@ class Simplifier:
                 converted = convert(option[0].lower(), word)
                 if converted != word and converted != None:
                     candidates.append(converted)
-            # Print
-            # for option in self.word2vec_model.most_similar(word, topn=topn):
-            #     if converted != word and converted != None and option[0].lower() != converted:
-            #          print(option[0].lower() + ' -> ' + word.lower() + ' = ' + converted)
 
         return candidates
 
@@ -91,9 +87,6 @@ class Simplifier:
                     converted = convert(lemma.name().lower(), word)
                     if converted != word and converted != None:
                         candidates.add(converted)
-                        # Print
-                        # if lemma.name().lower() != converted:
-                        #     print(lemma.name().lower() + ' -> ' + word.lower() + ' = ' + converted)
 
         return candidates
 
@@ -123,9 +116,8 @@ class Simplifier:
         freqToken = [None] * len(tokens)
         for index, token in enumerate(tokens):
             freqToken[index] = self.freq_dict.freq(token)
-        # # print('freqToken = {}'.format(freqToken))
+
         sortedtokens = [f for (t, f) in sorted(zip(freqToken, tokens))]
-        # # print(sortedtokens)
 
         return sortedtokens[:int(threshold * len(tokens))]
 
@@ -143,17 +135,9 @@ class Simplifier:
         for sent in sents:
             self.steps.write(sent + '\n')
             tokens = word_tokenize(sent)  # Split a sentence by words
-            #tags = pos_tag(tokens)
 
             # Find difficult words - long and infrequent
             difficultWords = [t for t in tokens if self.freq_dict[t] < freq_top_n]
-
-            # 1. Find difficult words
-            # freqToken = [None] * len(tokens)
-            # for index, token in enumerate(tokens):
-            #     freqToken[index] = self.freq_dict.freq(token)
-            # sortedtokens = [f for (t, f) in sorted(zip(freqToken, tokens))]
-            # difficultWords = [sortedtokens[i] for i in range(0, int(0.3 * len(tokens)))]  # take top 30% of infrequent words
             self.steps.write('difficultWords:' + str(difficultWords) + '\n')
 
             all_options = {}
@@ -221,7 +205,6 @@ class Simplifier:
                         output.append(token)
                 else:
                     output.append(token)
-            # print('v1', ' '.join(output))
             simplified1 += ' '.join(output)
 
             # 3. Generate replacements2  - take the word with the highest frequency
@@ -234,7 +217,6 @@ class Simplifier:
                     output.append(best)
                 else:
                     output.append(token)
-            # print('v2', ' '.join(output))
             simplified2 += ' '.join(output)
 
         return simplified0, simplified1, simplified2
@@ -247,11 +229,4 @@ if __name__ == '__main__':
         with open('wiki_output_zepp.csv', 'w') as w:
             for input in f:
                 simplified0, simplified1, simplified2 = simplifier.simplify(input)
-                # print('Original', input)
                 w.write(simplified0 + '\t' + simplified1 + '\t' + simplified2 + '\n')
-
-# 1. Choose difficult words (long and not frequent)
-# 2. Generate candidates - from dictionary of synonyms abd top word2vec words - check for gender, tense
-# 3. Choose the best candidate - check the context and frequency
-
-# Todo: choose long words

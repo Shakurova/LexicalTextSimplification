@@ -1,6 +1,4 @@
 ./model/*
-./data/*
-/data/
 /model/
 /pattern/
 /ppdb/
@@ -111,4 +109,4 @@ venv.bak/
 # mypy
 .mypy_cache/
 
-
+.pkl
